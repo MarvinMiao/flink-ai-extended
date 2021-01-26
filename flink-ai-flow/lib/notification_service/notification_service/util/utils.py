@@ -16,7 +16,9 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-from notification_service.base_notification import BaseEvent
+import time
+
+from notification_service.base_notification import BaseEvent, Member
 from notification_service.proto import notification_service_pb2
 
 
@@ -26,7 +28,8 @@ def event_to_proto(event: BaseEvent):
                                                              value=event.value,
                                                              event_type=event.event_type,
                                                              create_time=event.create_time,
-                                                             id=event.id)
+                                                             namespace=event.namespace,
+                                                             context=event.context)
     return result_event_proto
 
 
@@ -39,9 +42,40 @@ def event_list_to_proto(event_list):
 
 
 def event_proto_to_event(event_proto):
-    return BaseEvent(id=event_proto.id,
-                     key=event_proto.key,
+    return BaseEvent(key=event_proto.key,
                      value=event_proto.value,
                      event_type=event_proto.event_type,
                      version=event_proto.version,
-                     create_time=event_proto.create_time)
+                     create_time=event_proto.create_time,
+                     context=event_proto.context,
+                     namespace=event_proto.namespace)
+
+
+def event_model_to_event(event_model):
+    return BaseEvent(
+            key=event_model.key,
+            value=event_model.value,
+            event_type=event_model.event_type,
+            version=event_model.version,
+            create_time=event_model.create_time,
+            context=event_model.context,
+            namespace=event_model.namespace)
+
+
+def member_to_proto(member: Member):
+    return notification_service_pb2.MemberProto(
+        version=member.version, server_uri=member.server_uri, update_time=member.update_time)
+
+
+def proto_to_member(member_proto):
+    return Member(member_proto.version, member_proto.server_uri, member_proto.update_time)
+
+
+def sleep_and_detecting_running(interval_ms, is_running_callable, min_interval_ms=500):
+        start_time = time.time_ns() / 1000000
+        while is_running_callable() and time.time_ns() / 1000000 < start_time + interval_ms:
+            remaining = time.time_ns() / 1000000 - start_time
+            if remaining > min_interval_ms:
+                time.sleep(min_interval_ms / 1000)
+            else:
+                time.sleep(remaining / 1000)

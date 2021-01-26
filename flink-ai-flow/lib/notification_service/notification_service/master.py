@@ -20,8 +20,6 @@ import asyncio
 import functools
 import inspect
 import logging
-import os
-import sys
 import threading
 import time
 from concurrent import futures
@@ -47,6 +45,7 @@ class NotificationMaster(object):
     def __init__(self, service, port=_PORT):
         self.executor = Executor(futures.ThreadPoolExecutor(max_workers=10))
         self.server = grpc.server(self.executor)
+        self.service = service
         notification_service_pb2_grpc.add_NotificationServiceServicer_to_server(service,
                                                                                 self.server)
         self.server.add_insecure_port('[::]:' + str(port))
@@ -57,6 +56,7 @@ class NotificationMaster(object):
         :param is_block: is block mode
         :return:
         """
+        self.service.start()
         self.server.start()
         print('Notification master started.')
         if is_block:
@@ -75,6 +75,7 @@ class NotificationMaster(object):
         """
         self.executor.shutdown()
         self.server.stop(0)
+        self.service.stop()
         print('Notification master stopped.')
 
 
@@ -93,8 +94,9 @@ class Executor(futures.Executor):
         self._shutdown = False
         self._thread_pool = thread_pool
         self._loop = loop or asyncio.get_event_loop()
-        self._thread = threading.Thread(target=_loop, args=(self._loop,), daemon=True)
-        self._thread.start()
+        if not self._loop.is_running() or self._loop.is_closed():
+            self._thread = threading.Thread(target=_loop, args=(self._loop,), daemon=True)
+            self._thread.start()
 
     def submit(self, fn, *args, **kwargs):
         if self._shutdown:
@@ -109,7 +111,6 @@ class Executor(futures.Executor):
             return self._loop.run_in_executor(self._thread_pool, func)
 
     def shutdown(self, wait=True):
-        self._loop.stop()
         self._shutdown = True
         if wait:
             self._thread_pool.shutdown()
