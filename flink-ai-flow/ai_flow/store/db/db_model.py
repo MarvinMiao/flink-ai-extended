@@ -28,6 +28,7 @@ from ai_flow.model_center.entity.model_version_detail import ModelVersionDetail
 from ai_flow.model_center.entity.model_version_stage import STAGE_DELETED, STAGE_GENERATED
 from ai_flow.model_center.entity.model_version_status import ModelVersionStatus
 from ai_flow.model_center.entity.registered_model_detail import RegisteredModelDetail
+from ai_flow.store import MONGO_DB_ALIAS_META_SERVICE
 from ai_flow.store.db.base_model import base, Base
 
 
@@ -384,7 +385,7 @@ class DocumentExample(Document):
     Document of example in metadata backend storage.
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     support_type = StringField(max_length=256, required=True)
     data_type = StringField(max_length=256)
@@ -404,6 +405,8 @@ class DocumentExample(Document):
     catalog_version = StringField(max_length=1000)
     catalog_table = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document Example ({}, {}, {}, {}, {}, {}, {}, {}, {})>'.format(
@@ -430,6 +433,8 @@ class DocumentModelVersionRelation(Document):
     version_workflow_execution_uuid_unique = StringField(max_length=1000, required=True, unique=True)
     is_deleted = BooleanField(default=False)
 
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.model_uuid = kwargs['model_id']
@@ -451,12 +456,14 @@ class DocumentModelRelation(Document):
     Document of model relation in metadata backend storage.
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     project_uuid = IntField()
     is_deleted = BooleanField(default=False)
 
     model_version_relation = ReferenceField(DocumentModelVersionRelation)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
     
     def __repr__(self):
         return '<Document ModelEelation ({}, {}, {})>'.format(
@@ -470,7 +477,7 @@ class DocumentProject(Document):
     Document of project in metadata backend storage.
     """
     
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     properties = StringField(max_length=1000)
     project_type = StringField(max_length=1000)
@@ -480,6 +487,8 @@ class DocumentProject(Document):
     is_deleted = BooleanField(default=False)
 
     model_relation = ReferenceField(DocumentModelRelation)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document Project ({}, {}, {}, {}, {}, {}, {})>'.format(
@@ -497,7 +506,7 @@ class DocumentJob(Document):
     Document of job in metadata backend storage.
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     workflow_execution_id = IntField()
     job_id = StringField(max_length=1000)
@@ -508,6 +517,8 @@ class DocumentJob(Document):
     log_uri = StringField(max_length=256)
     signature = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document Job ({}, {}, {}, {}, {}, {}, {}, {}, {}, {})>'.format(
@@ -528,7 +539,7 @@ class DocumentWorkflowExecution(Document):
     Document of workflow execution in metadata backend storage.
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     project_id = IntField()
     properties = StringField(max_length=1000)
@@ -542,6 +553,8 @@ class DocumentWorkflowExecution(Document):
 
     job_info = ReferenceField(DocumentJob)
     model_version_relation = ReferenceField(DocumentModelVersionRelation)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document WorkflowExecution ({}, {}, {}, {}, {}, {}, {}, {}, {}, {})>'.format(
@@ -562,11 +575,13 @@ class DocumentWorkflow(Document):
     Document of workflow in metadata backend storage.
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     project_id = ObjectIdField()
     properties = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document Workflow ({}, {}, {}, {})>'.format(
@@ -591,6 +606,8 @@ class DocumentModelVersion(Document):
                                  default=ModelVersionStatus.to_string(ModelVersionStatus.READY))
     current_stage = StringField(max_length=20, default=STAGE_GENERATED)
     name_version_current_stage_unique = StringField(max_length=1000, required=True, unique=True)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __init__(self, *args, **kwargs):
         n = kwargs['model_name']
@@ -633,6 +650,8 @@ class DocumentRegisteredModel(Document):
 
     model_version = ReferenceField(DocumentModelVersion)
 
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
+
     def __repr__(self):
         return '<Document RegisteredModel ({}, {}, {})>'.format(
             self.model_name,
@@ -656,12 +675,14 @@ class DocumentEvent(Document):
     Document of event in Notification Service backend storage.
     """
 
-    id = SequenceField()
+    id = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     key = StringField(max_length=1024, required=True)
     version = IntField(required=True)
     value = Column(String(1024))
     event_type = Column(String(256))
     create_time = LongField()
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document Event ({}, {}, {}, {}, {} {})>'.format(
@@ -686,7 +707,7 @@ class DocumentArtifact(Document):
     Document of artifact in metadata backend storage.
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     data_format = StringField(max_length=256)
     description = StringField(max_length=1000)
@@ -696,6 +717,8 @@ class DocumentArtifact(Document):
     update_time = LongField()
     properties = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document Artifact ({}, {}, {}, {}, {}, {}, {}, {}, {}, {})>'.format(
@@ -716,7 +739,7 @@ class DocumentMetricMeta(Document):
     Document of metric meta
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
     dataset_id = IntField()
     model_name = StringField(max_length=256)
@@ -730,6 +753,8 @@ class DocumentMetricMeta(Document):
     metric_description = StringField(max_length=4096)
     properties = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document MetricMeta ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})>' \
@@ -751,11 +776,13 @@ class DocumentMetricSummary(Document):
     Document of metric summary
     """
 
-    uuid = SequenceField()
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     metric_id = IntField()
     metric_key = StringField(max_length=128, required=True)
     metric_value = StringField(max_length=2048, required=True)
     is_deleted = BooleanField(default=False)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document MetricSummary ({}, {}, {})>'.format(self.metric_id, self.metric_key, self.metric_value)
@@ -771,6 +798,8 @@ class DocumentMember(Document):
     server_uri = StringField(max_length=767, required=True, unique=True)
     update_time = LongField(required=True)
     uuid = StringField(max_length=128, required=True, unique=True)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __repr__(self):
         return '<Document Member ({}, {}, {}, {}, {})>'.format(

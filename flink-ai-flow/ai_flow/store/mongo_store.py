@@ -42,6 +42,7 @@ from ai_flow.rest_endpoint.protobuf.message_pb2 import INVALID_PARAMETER_VALUE, 
 from ai_flow.rest_endpoint.service.exception import AIFlowException
 from ai_flow.rest_endpoint.service.high_availability import Member
 from ai_flow.store.abstract_store import AbstractStore
+from ai_flow.store import MONGO_DB_ALIAS_META_SERVICE
 from ai_flow.store.db.db_model import (DocumentProject, DocumentExample, DocumentModelVersion, DocumentJob,
                                        DocumentArtifact, DocumentRegisteredModel, DocumentEvent,
                                        DocumentWorkflowExecution, DocumentMetricSummary, DocumentMetricMeta,
@@ -54,7 +55,6 @@ _logger = logging.getLogger(__name__)
 TRUE = True
 UPDATE_FAIL = -1
 deleted_character = '~~'
-meta_service_alias = 'meta-service-db'
 
 
 class MongoStore(AbstractStore):
@@ -1982,7 +1982,7 @@ class MongoStoreConnManager(object):
     def connect(self, db_uri):
         _, _, _, _, db = parse_mongo_uri(db_uri)
         if db_uri not in self._conns:
-            self._conns[db_uri] = mongoengine.connect(db, host=db_uri, alias=meta_service_alias)
+            self._conns[db_uri] = mongoengine.connect(db, host=db_uri, alias=MONGO_DB_ALIAS_META_SERVICE)
             self._connected_uris.add(db_uri)
     
     def disconnect(self, db_uri):
@@ -1995,3 +1995,14 @@ class MongoStoreConnManager(object):
         current_connected_uris = self._connected_uris.copy()
         for uri in current_connected_uris:
             self.disconnect(uri)
+    
+    def drop(self, db_uri_without_auth):
+        db_uri = f'{db_uri_without_auth}?authSource=admin'
+        if db_uri in self._conns:
+            _, _, _, _, db = parse_mongo_uri(db_uri)
+            self._conns[db_uri].drop_database(db)
+    
+    def drop_all(self):
+        current_connected_uris = self._connected_uris.copy()
+        for db_uri in current_connected_uris:
+            self.drop(db_uri)
