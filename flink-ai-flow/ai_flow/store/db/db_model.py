@@ -427,8 +427,8 @@ class DocumentModelVersionRelation(Document):
     """
 
     version = StringField(max_length=255, required=True, unique=True)
-    model_uuid = IntField()
-    workflow_execution_uuid = IntField()
+    model_id = IntField()
+    workflow_execution_id = IntField()
     version_model_uuid_unique = StringField(max_length=1000, required=True, unique=True)
     version_workflow_execution_uuid_unique = StringField(max_length=1000, required=True, unique=True)
     is_deleted = BooleanField(default=False)
@@ -436,13 +436,12 @@ class DocumentModelVersionRelation(Document):
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
     def __init__(self, *args, **kwargs):
+        version = kwargs['version']
+        model_id = kwargs['model_id']
+        workflow_execution_id = kwargs['workflow_execution_id']
+        kwargs['version_model_uuid_unique'] = f'{version}-{model_id}'
+        kwargs['version_workflow_execution_uuid_unique'] = f'{version}-{workflow_execution_id}'
         super().__init__(*args, **kwargs)
-        self.model_uuid = kwargs['model_id']
-        self.workflow_execution_uuid = kwargs['workflow_execution_id']
-        version_model_uuid = f'{self.version}-{self.model_uuid}'
-        version_workflow_execution_uuid = f'{self.version}-{self.workflow_execution_uuid}'
-        self.version_model_uuid_unique = version_model_uuid
-        self.version_workflow_execution_uuid_unique = version_workflow_execution_uuid
 
     def __repr__(self):
         return '<Document ModelVersionRelation ({}, {}, {})>'.format(
@@ -458,7 +457,7 @@ class DocumentModelRelation(Document):
 
     uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
-    project_uuid = IntField()
+    project_id = IntField()
     is_deleted = BooleanField(default=False)
 
     model_version_relation = ReferenceField(DocumentModelVersionRelation)
@@ -469,36 +468,7 @@ class DocumentModelRelation(Document):
         return '<Document ModelEelation ({}, {}, {})>'.format(
             self.uuid,
             self.name,
-            self.project_uuid)
-
-
-class DocumentProject(Document):
-    """
-    Document of project in metadata backend storage.
-    """
-    
-    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
-    name = StringField(max_length=255, required=True, unique=True)
-    properties = StringField(max_length=1000)
-    project_type = StringField(max_length=1000)
-    user = StringField(max_length=1000)
-    password = StringField(max_length=1000)
-    uri = StringField(max_length=1000)
-    is_deleted = BooleanField(default=False)
-
-    model_relation = ReferenceField(DocumentModelRelation)
-
-    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
-
-    def __repr__(self):
-        return '<Document Project ({}, {}, {}, {}, {}, {}, {})>'.format(
-            self.uuid,
-            self.name,
-            self.properties,
-            self.project_type,
-            self.user,
-            self.password,
-            self.uri)
+            self.project_id)
 
 
 class DocumentJob(Document):
@@ -570,6 +540,36 @@ class DocumentWorkflowExecution(Document):
             self.project_uuid)
 
 
+class DocumentProject(Document):
+    """
+    Document of project in metadata backend storage.
+    """
+    
+    uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
+    name = StringField(max_length=255, required=True, unique=True)
+    properties = StringField(max_length=1000)
+    project_type = StringField(max_length=1000)
+    user = StringField(max_length=1000)
+    password = StringField(max_length=1000)
+    uri = StringField(max_length=1000)
+    is_deleted = BooleanField(default=False)
+
+    model_relation = ReferenceField(DocumentModelRelation)
+    workflow_execution = ReferenceField(DocumentWorkflowExecution)
+
+    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
+
+    def __repr__(self):
+        return '<Document Project ({}, {}, {}, {}, {}, {}, {})>'.format(
+            self.uuid,
+            self.name,
+            self.properties,
+            self.project_type,
+            self.user,
+            self.password,
+            self.uri)
+
+
 class DocumentWorkflow(Document):
     """
     Document of workflow in metadata backend storage.
@@ -619,7 +619,7 @@ class DocumentModelVersion(Document):
     
     def __repr__(self):
         return '<Document ModelVersion ({}, {}, {}, {}, {}, {}, {}, {})>'.format(
-            self.model_id,
+            self.model_name,
             self.model_version,
             self.model_path,
             self.model_metric,
@@ -629,7 +629,7 @@ class DocumentModelVersion(Document):
             self.current_stage)
 
     def to_meta_entity(self):
-        return ModelVersionDetail(self.model_id,
+        return ModelVersionDetail(self.model_name,
                                   self.model_version,
                                   self.model_path,
                                   self.model_metric,
