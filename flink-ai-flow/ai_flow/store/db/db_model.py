@@ -20,8 +20,8 @@ from notification_service.base_notification import BaseEvent
 from sqlalchemy import (
     Column, String, ForeignKey, Integer, PrimaryKeyConstraint, BigInteger, UniqueConstraint)
 from sqlalchemy.orm import relationship, backref
-from mongoengine import (Document, StringField, IntField, LongField, EmbeddedDocumentListField,
-                         ReferenceField, BooleanField, ListField, ObjectIdField, SequenceField)
+from mongoengine import (Document, StringField, IntField, LongField, ReferenceField,
+                         BooleanField, ListField, ObjectIdField, SequenceField)
 
 from ai_flow.meta.metric_meta import MetricType
 from ai_flow.model_center.entity.model_version_detail import ModelVersionDetail
@@ -460,12 +460,12 @@ class DocumentModelRelation(Document):
     project_id = IntField()
     is_deleted = BooleanField(default=False)
 
-    model_version_relation = ReferenceField(DocumentModelVersionRelation)
+    model_version_relation = ListField(ReferenceField(DocumentModelVersionRelation))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
     
     def __repr__(self):
-        return '<Document ModelEelation ({}, {}, {})>'.format(
+        return '<Document ModelRelation ({}, {}, {})>'.format(
             self.uuid,
             self.name,
             self.project_id)
@@ -521,8 +521,8 @@ class DocumentWorkflowExecution(Document):
     signature = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
 
-    job_info = ReferenceField(DocumentJob)
-    model_version_relation = ReferenceField(DocumentModelVersionRelation)
+    job_info = ListField(ReferenceField(DocumentJob))
+    model_version_relation = ListField(ReferenceField(DocumentModelVersionRelation))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
@@ -554,8 +554,8 @@ class DocumentProject(Document):
     uri = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
 
-    model_relation = ReferenceField(DocumentModelRelation)
-    workflow_execution = ReferenceField(DocumentWorkflowExecution)
+    model_relation = ListField(ReferenceField(DocumentModelRelation))
+    workflow_execution = ListField(ReferenceField(DocumentWorkflowExecution))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
@@ -577,7 +577,7 @@ class DocumentWorkflow(Document):
 
     uuid = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
     name = StringField(max_length=255, required=True, unique=True)
-    project_id = ObjectIdField()
+    project_id = IntField()
     properties = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
 
@@ -648,7 +648,7 @@ class DocumentRegisteredModel(Document):
     model_type = StringField(max_length=500)
     model_desc = StringField(max_length=1000)
 
-    model_version = ReferenceField(DocumentModelVersion)
+    model_version = ListField(ReferenceField(DocumentModelVersion))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 

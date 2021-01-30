@@ -510,7 +510,7 @@ class AbstractTestStore(object):
                                                execution_state=State.INIT)
         response = self.store.register_model_version_relation(version='1', model_id=1, workflow_execution_id=1)
         self.assertEqual(response.version, '1')
-        self.assertEqual(self.store.get_model_version_relation_by_version(version_name=1, model_id=1).version, '1')
+        self.assertEqual(self.store.get_model_version_relation_by_version(version_name='1', model_id=1).version, '1')
 
     def test_list_model_version(self):
         self.store.register_project(name='project', uri='www.code.com', project_type='GIT')
