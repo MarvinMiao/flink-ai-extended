@@ -43,11 +43,10 @@ from ai_flow.rest_endpoint.service.exception import AIFlowException
 from ai_flow.rest_endpoint.service.high_availability import Member
 from ai_flow.store.abstract_store import AbstractStore
 from ai_flow.store import MONGO_DB_ALIAS_META_SERVICE
-from ai_flow.store.db.db_model import (DocumentProject, DocumentExample, DocumentModelVersion, DocumentJob,
-                                       DocumentArtifact, DocumentRegisteredModel, DocumentEvent,
-                                       DocumentWorkflowExecution, DocumentMetricSummary, DocumentMetricMeta,
-                                       DocumentWorkflow, DocumentModelRelation, DocumentModelVersionRelation,
-                                       DocumentMember)
+from ai_flow.store.db.db_model import (MongoProject, MongoExample, MongoModelVersion, MongoJob,
+                                       MongoArtifact, MongoRegisteredModel, MongoModelRelation,
+                                       MongoWorkflowExecution, MongoMetricSummary, MongoMetricMeta,
+                                       MongoWorkflow, MongoModelVersionRelation, MongoMember)
 from ai_flow.store.db.db_util import extract_db_engine_from_uri, parse_mongo_uri
 
 _logger = logging.getLogger(__name__)
@@ -64,16 +63,22 @@ class MongoStore(AbstractStore):
 
     CREATE_RETRY_TIMES = 3
 
-    def __init__(self, db_uri):
+    def __init__(self, **kwargs):
         """
         Create database backend storage by specified database URI
 
         :param db_uri: The mongodb database URI string to connect to the database.
         """
         super(MongoStore, self).__init__()
-        self.db_uri = f'{db_uri}?authSource=admin'
-        self.db_type = extract_db_engine_from_uri(db_uri)
-        MongoStoreConnManager().connect(self.db_uri)
+        db_conf = {
+            "host": kwargs.get("host"),
+            "port": kwargs.get("port"),
+            "username": kwargs.get("username"),
+            "password": kwargs.get("password"),
+            "db": kwargs.get("db"),
+        }
+        self.db_uri = "mongodb://{username}:{password}@{host}:{port}/{db}?authSource=admin".format(**db_conf)
+        MongoStoreConnManager().connect(self.db_uri, kwargs.get("db"))
 
     def _save_all(self, objs):
         """
@@ -95,7 +100,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.example_meta.ExampleMeta` object if the example exists,
                  Otherwise, returns None if the example does not exist.
         """
-        example_result = DocumentExample.objects(uuid=example_id, is_deleted__ne=TRUE)
+        example_result = MongoExample.objects(uuid=example_id, is_deleted__ne=TRUE)
         if len(example_result) == 0:
             return None
         return ResultToMeta.result_to_example_meta(example_result[0])
@@ -108,7 +113,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.example_meta.ExampleMeta` object if the example exists,,
                  Otherwise, returns None if the example does not exist.
         """
-        example_result = DocumentExample.objects(name=example_name, is_deleted__ne=TRUE)
+        example_result = MongoExample.objects(name=example_name, is_deleted__ne=TRUE)
         if len(example_result) == 0:
             return None
         return ResultToMeta.result_to_example_meta(example_result[0])
@@ -268,7 +273,7 @@ class MongoStore(AbstractStore):
                        catalog_table: Text = None) -> Optional[ExampleMeta]:
         
         try:
-            example: DocumentExample = DocumentExample.objects(name=example_name).first()
+            example: MongoExample = MongoExample.objects(name=example_name).first()
             if example is None:
                 return None
             if support_type is not None:
@@ -321,7 +326,7 @@ class MongoStore(AbstractStore):
         :return: List of :py:class:`ai_flow.meta.example_meta.ExampleMeta` objects,
                  return None if no examples to be listed.
         """
-        example_result = DocumentExample.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
+        example_result = MongoExample.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
         if len(example_result) == 0:
             return None
         example_list = []
@@ -337,10 +342,10 @@ class MongoStore(AbstractStore):
         :return: Status.OK if the example is successfully deleted, Status.ERROR if the example does not exist otherwise.
         """
         try:
-            example = DocumentExample.objects(name=example_name, is_deleted__ne=TRUE).first()
+            example = MongoExample.objects(name=example_name, is_deleted__ne=TRUE).first()
             if example is None:
                 return Status.ERROR
-            deleted_example_counts = DocumentExample.objects(name__startswith=deleted_character + example_name + deleted_character, is_deleted=TRUE).count()
+            deleted_example_counts = MongoExample.objects(name__startswith=deleted_character + example_name + deleted_character, is_deleted=TRUE).count()
             example.is_deleted = TRUE
             example.name = deleted_character + example.name + deleted_character + str(deleted_example_counts + 1)
             example.save()
@@ -370,7 +375,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.project.ProjectMeta` object if the project exists,
                  Otherwise, returns None if the project does not exist.
         """
-        project_result = DocumentProject.objects(uuid=project_id, is_deleted__ne=TRUE)
+        project_result = MongoProject.objects(uuid=project_id, is_deleted__ne=TRUE)
         if len(project_result) == 0:
             return None
         return ResultToMeta.result_to_project_meta(project_result[0])
@@ -382,7 +387,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.project.ProjectMeta` object if the project exists,
                  Otherwise, returns None if the project does not exist.
         """
-        project_result = DocumentProject.objects(name=project_name, is_deleted__ne=TRUE)
+        project_result = MongoProject.objects(name=project_name, is_deleted__ne=TRUE)
         if len(project_result) == 0:
             return None
         return ResultToMeta.result_to_project_meta(project_result[0])
@@ -435,7 +440,7 @@ class MongoStore(AbstractStore):
                  return None if no projects to be listed.
         """
         
-        project_result = DocumentProject.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
+        project_result = MongoProject.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
         if len(project_result) == 0:
             return None
         projects = []
@@ -446,7 +451,7 @@ class MongoStore(AbstractStore):
     def update_project(self, project_name: Text, uri: Text = None, properties: Properties = None,
                        user: Text = None, password: Text = None, project_type: Text = None) -> Optional[ProjectMeta]:
         try:
-            project: DocumentProject = DocumentProject.objects(name=project_name, is_deleted__ne=TRUE).first()
+            project: MongoProject = MongoProject.objects(name=project_name, is_deleted__ne=TRUE).first()
             if project is None:
                 return None
             if uri is not None:
@@ -484,10 +489,10 @@ class MongoStore(AbstractStore):
         :return: Status.OK if the project is successfully deleted, Status.ERROR if the project does not exist otherwise.
         """
         try:
-            project = DocumentProject.objects(name=project_name, is_deleted__ne=TRUE).first()
+            project = MongoProject.objects(name=project_name, is_deleted__ne=TRUE).first()
             if project is None:
                 return Status.ERROR
-            deleted_project_counts = DocumentProject.objects(
+            deleted_project_counts = MongoProject.objects(
                 name__startswith=deleted_character + project_name + deleted_character,
                 is_deleted=TRUE).count()
             project.is_deleted = TRUE
@@ -495,14 +500,14 @@ class MongoStore(AbstractStore):
             job_list = []
             model_version_list = []
             for per_workflow_execution in project.workflow_execution:
-                deleted_workflow_execution_counts = DocumentWorkflowExecution.objects(
+                deleted_workflow_execution_counts = MongoWorkflowExecution.objects(
                     name__startswith=deleted_character + per_workflow_execution.name + deleted_character,
                     is_deleted=TRUE).count()
                 per_workflow_execution.is_deleted = TRUE
                 per_workflow_execution.name = deleted_character + per_workflow_execution.name + deleted_character + str(
                     deleted_workflow_execution_counts + 1)
                 for per_job in per_workflow_execution.job_info:
-                    deleted_job_counts = DocumentJob.objects(
+                    deleted_job_counts = MongoJob.objects(
                         name__startswith=deleted_character + per_job.name + deleted_character,
                         is_deleted=TRUE).count()
                     per_job.is_deleted = TRUE
@@ -510,22 +515,22 @@ class MongoStore(AbstractStore):
                         deleted_job_counts + 1)
                 job_list += per_workflow_execution.job_info
             for per_model in project.model_relation:
-                    deleted_model_relation_counts = DocumentModelRelation.objects(
+                    deleted_model_relation_counts = MongoModelRelation.objects(
                         name__startswith=deleted_character + per_model.name + deleted_character,
                         is_deleted=TRUE).count()
                     per_model.is_deleted = TRUE
                     per_model.name = deleted_character + per_model.name + deleted_character + str(
                         deleted_model_relation_counts + 1)
                     for model_version in per_model.model_version_relation:
-                        deleted_model_version_relation_counts = DocumentModelVersionRelation.objects(
+                        deleted_model_version_relation_counts = MongoModelVersionRelation.objects(
                             version__startswith=deleted_character + model_version.version + deleted_character,
                             is_deleted=TRUE).count()
                         model_version.is_deleted = TRUE
                         model_version.version = deleted_character + model_version.version + deleted_character + str(
                             deleted_model_version_relation_counts + 1)
                         # update for unqine constraint
-                        model_version.version_model_uuid_unique = f'{model_version.version}-{model_version.model_id}'
-                        model_version.version_workflow_execution_uuid_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
+                        model_version.version_model_id_unique = f'{model_version.version}-{model_version.model_id}'
+                        model_version.version_workflow_execution_id_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
                     model_version_list += per_model.model_version_relation
             self._save_all([project] + project.workflow_execution + project.model_relation + job_list + model_version_list)
             return Status.OK
@@ -542,7 +547,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.model_relation_meta.ModelRelationMeta` object if the model relation
                  exists, Otherwise, returns None if the model relation does not exist.
         """
-        model_result = DocumentModelRelation.objects(uuid=model_id, is_deleted__ne=TRUE)
+        model_result = MongoModelRelation.objects(uuid=model_id, is_deleted__ne=TRUE)
         if len(model_result) == 0:
             return None
         return ResultToMeta.result_to_model_relation_meta(model_result[0])
@@ -555,7 +560,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.model_relation_meta.ModelRelationMeta` object if the model relation
                  exists, Otherwise, returns None if the model relation does not exist.
         """
-        model_result = DocumentModelRelation.objects(name=name, is_deleted__ne=TRUE)
+        model_result = MongoModelRelation.objects(name=name, is_deleted__ne=TRUE)
         if len(model_result) == 0:
             return None
         return ResultToMeta.result_to_model_relation_meta(model_result[0])
@@ -587,7 +592,7 @@ class MongoStore(AbstractStore):
             model.save()
             # update reference field
             if project_id is not None:
-                project = DocumentProject.objects(uuid=project_id).first()
+                project = MongoProject.objects(uuid=project_id).first()
                 if project.model_relation is None:
                     project.model_relation = [model]
                 else:
@@ -608,7 +613,7 @@ class MongoStore(AbstractStore):
         :return: List of :py:class:`ai_flow.meta.model_relation_meta.ModelRelationMeta` objects,
                  return None if no model relations to be listed.
         """
-        model_result = DocumentModelRelation.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
+        model_result = MongoModelRelation.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
         if len(model_result) == 0:
             return None
         models = []
@@ -636,24 +641,24 @@ class MongoStore(AbstractStore):
         :return: Status.OK if the model is successfully deleted, Status.ERROR if the model does not exist otherwise.
         """
         try:
-            model = DocumentModelRelation.objects(name=model_name, is_deleted__ne=TRUE).first()
+            model = MongoModelRelation.objects(name=model_name, is_deleted__ne=TRUE).first()
             if model is None:
                 return Status.ERROR
-            deleted_model_counts = DocumentModelRelation.objects(
+            deleted_model_counts = MongoModelRelation.objects(
                 name__startswith=deleted_character + model.name + deleted_character,
                 is_deleted=TRUE).count()
             model.is_deleted = TRUE
             model.name = deleted_character + model.name + deleted_character + str(deleted_model_counts + 1)
             for model_version in model.model_version_relation:
-                deleted_model_version_counts = DocumentModelVersionRelation.objects(
+                deleted_model_version_counts = MongoModelVersionRelation.objects(
                     version__startswith=deleted_character + model_version.version + deleted_character,
                     is_deleted=TRUE).count()
                 model_version.is_deleted = TRUE
                 model_version.version = deleted_character + model_version.version + deleted_character + str(
                     deleted_model_version_counts + 1)
                 # update for unqine constraint
-                model_version.version_model_uuid_unique = f'{model_version.version}-{model_version.model_id}'
-                model_version.version_workflow_execution_uuid_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
+                model_version.version_model_id_unique = f'{model_version.version}-{model_version.model_id}'
+                model_version.version_workflow_execution_id_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
             self._save_all([model] + model.model_version_relation)
             return Status.OK
         except mongoengine.OperationError as e:
@@ -669,7 +674,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.workflow_execution_meta.WorkflowExecutionMeta` object
                  if the workflow execution exists, Otherwise, returns None if the workflow execution does not exist.
         """
-        execution_result = DocumentWorkflowExecution.objects(uuid=execution_id, is_deleted__ne=TRUE)
+        execution_result = MongoWorkflowExecution.objects(uuid=execution_id, is_deleted__ne=TRUE)
         if len(execution_result) == 0:
             return None
         workflow_execution = ResultToMeta.result_to_workflow_execution_meta(execution_result[0])
@@ -683,7 +688,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.workflow_execution_meta.WorkflowExecutionMeta` object
                  if the workflow execution exists, Otherwise, returns None if the workflow execution does not exist.
         """
-        execution_result = DocumentWorkflowExecution.objects(name=execution_name, is_deleted__ne=TRUE)
+        execution_result = MongoWorkflowExecution.objects(name=execution_name, is_deleted__ne=TRUE)
         if len(execution_result) == 0:
             return None
         workflow_execution = ResultToMeta.result_to_workflow_execution_meta(execution_result[0])
@@ -720,7 +725,7 @@ class MongoStore(AbstractStore):
             execution.save()
             # update reference field
             if project_id is not None:
-                project = DocumentProject.objects(uuid=project_id).first()
+                project = MongoProject.objects(uuid=project_id).first()
                 if project.workflow_execution is None:
                     project.workflow_execution = [execution]
                 else:
@@ -745,7 +750,7 @@ class MongoStore(AbstractStore):
         :return: List of :py:class:`ai_flow.meta.workflow_execution_meta.WorkflowExecutionMeta` object,
                  return None if no workflow executions to be listed.
         """
-        execution_result = DocumentWorkflowExecution.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
+        execution_result = MongoWorkflowExecution.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
         if len(execution_result) == 0:
             return None
         workflow_execution_list = []
@@ -759,7 +764,7 @@ class MongoStore(AbstractStore):
                                   log_uri: Text = None, workflow_json: Text = None, signature: Text = None) -> \
             Optional[WorkflowExecutionMeta]:
         try:
-            workflow_execution: DocumentWorkflowExecution = DocumentWorkflowExecution.objects(name=execution_name, is_deleted__ne=TRUE).first()
+            workflow_execution: MongoWorkflowExecution = MongoWorkflowExecution.objects(name=execution_name, is_deleted__ne=TRUE).first()
             if workflow_execution is None:
                 return None
             if execution_state is not None:
@@ -795,7 +800,7 @@ class MongoStore(AbstractStore):
                  if fail to update otherwise.
         """
         try:
-            workflow_execution = DocumentWorkflowExecution.objects(name=execution_name).first()
+            workflow_execution = MongoWorkflowExecution.objects(name=execution_name).first()
             if workflow_execution is None:
                 return UPDATE_FAIL
             workflow_execution.end_time = end_time
@@ -814,7 +819,7 @@ class MongoStore(AbstractStore):
                  if fail to update otherwise.
         """
         try:
-            workflow_execution = DocumentWorkflowExecution.objects(name=execution_name).first()
+            workflow_execution = MongoWorkflowExecution.objects(name=execution_name).first()
             if workflow_execution is None:
                 return UPDATE_FAIL
             workflow_execution.execution_state = state
@@ -845,31 +850,31 @@ class MongoStore(AbstractStore):
                  Status.ERROR if the workflow execution does not exist otherwise.
         """
         try:
-            execution = DocumentWorkflowExecution.objects(name=execution_name, is_deleted__ne=TRUE).first()
+            execution = MongoWorkflowExecution.objects(name=execution_name, is_deleted__ne=TRUE).first()
             if execution is None:
                 return Status.ERROR
-            deleted_execution_counts = DocumentWorkflowExecution.objects(
+            deleted_execution_counts = MongoWorkflowExecution.objects(
                 name__startswith=deleted_character + execution.name + deleted_character,
                 is_deleted=TRUE).count()
             execution.is_deleted = TRUE
             execution.name = deleted_character + execution.name + deleted_character + str(
                 deleted_execution_counts + 1)
             for per_job in execution.job_info:
-                deleted_job_counts = DocumentJob.objects(
+                deleted_job_counts = MongoJob.objects(
                     name__startswith=deleted_character + per_job.name + deleted_character,
                     is_deleted=TRUE).count()
                 per_job.is_deleted = TRUE
                 per_job.name = deleted_character + per_job.name + deleted_character + str(deleted_job_counts + 1)
             for model_version in execution.model_version_relation:
-                deleted_model_version_counts = DocumentModelVersionRelation.objects(
+                deleted_model_version_counts = MongoModelVersionRelation.objects(
                     version__startswith=deleted_character + model_version.version + deleted_character,
                     is_deleted=TRUE).count()
                 model_version.is_deleted = TRUE
                 model_version.version = deleted_character + model_version.version + deleted_character + str(
                     deleted_model_version_counts + 1)
                 # update for unqine constraint
-                model_version.version_model_uuid_unique = f'{model_version.version}-{model_version.model_id}'
-                model_version.version_workflow_execution_uuid_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
+                model_version.version_model_id_unique = f'{model_version.version}-{model_version.model_id}'
+                model_version.version_workflow_execution_id_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
             self._save_all([execution] + execution.job_info + execution.model_version_relation)
             return Status.OK
         except mongoengine.OperationError as e:
@@ -886,7 +891,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.model_relation_meta.ModelVersionRelationMeta` object
                  if the model version exists, Otherwise, returns None if the model version does not exist.
         """
-        model_version_result = DocumentModelVersionRelation.objects(version=version_name, model_id=model_id, is_deleted__ne=TRUE)
+        model_version_result = MongoModelVersionRelation.objects(version=version_name, model_id=model_id, is_deleted__ne=TRUE)
         if len(model_version_result) == 0:
             return None
         return ResultToMeta.result_to_model_version_relation_meta(model_version_result[0])
@@ -910,7 +915,7 @@ class MongoStore(AbstractStore):
             model_version_relation.save()
             # update reference field
             if model_id is not None:
-                model_relation = DocumentModelRelation.objects(uuid=model_id).first()
+                model_relation = MongoModelRelation.objects(uuid=model_id).first()
                 if model_relation.model_version_relation is None:
                     model_relation.model_version_relation = [model_version_relation]
                 else:
@@ -918,7 +923,7 @@ class MongoStore(AbstractStore):
                 model_relation.save()
             
             if workflow_execution_id is not None:
-                workflow_execution = DocumentWorkflowExecution.objects(uuid=workflow_execution_id).first()
+                workflow_execution = MongoWorkflowExecution.objects(uuid=workflow_execution_id).first()
                 if workflow_execution.model_version_relation is None:
                     workflow_execution.model_version_relation = [model_version_relation]
                 else:
@@ -942,7 +947,7 @@ class MongoStore(AbstractStore):
         :return: List of :py:class:`ai_flow.meta.model_relation_meta.ModelRelationMeta` objects,
                  return None if no model version relations to be listed.
         """
-        model_version_result = DocumentModelVersionRelation.objects(model_id=model_id, is_deleted__ne=TRUE).skip(offset).limit(page_size)
+        model_version_result = MongoModelVersionRelation.objects(model_id=model_id, is_deleted__ne=TRUE).skip(offset).limit(page_size)
         if len(model_version_result) == 0:
             return None
         model_version_list = []
@@ -960,18 +965,18 @@ class MongoStore(AbstractStore):
                  Status.ERROR if the model version does not exist otherwise.
         """
         try:
-            model_version = DocumentModelVersionRelation.objects(version=version, model_id=model_id, is_deleted__ne=TRUE).first()
+            model_version = MongoModelVersionRelation.objects(version=version, model_id=model_id, is_deleted__ne=TRUE).first()
             if model_version is None:
                 return Status.ERROR
-            deleted_model_version_counts = DocumentModelVersionRelation.objects(
+            deleted_model_version_counts = MongoModelVersionRelation.objects(
                 version__startswith=deleted_character + version + deleted_character,
                 is_deleted=TRUE).count()
             model_version.is_deleted = TRUE
             model_version.version = deleted_character + model_version.version + deleted_character + str(
                 deleted_model_version_counts + 1)
             # update for unqine constraint
-            model_version.version_model_uuid_unique = f'{model_version.version}-{model_version.model_id}'
-            model_version.version_workflow_execution_uuid_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
+            model_version.version_model_id_unique = f'{model_version.version}-{model_version.model_id}'
+            model_version.version_workflow_execution_id_unique = f'{model_version.version}-{model_version.workflow_execution_id}'
             model_version.save()
             return Status.OK
         except mongoengine.OperationError as e:
@@ -987,7 +992,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.job_meta.JobMeta` object
                  if the job exists, Otherwise, returns None if the job does not exist.
         """
-        job_result = DocumentJob.objects(uuid=job_id, is_deleted__ne=TRUE)
+        job_result = MongoJob.objects(uuid=job_id, is_deleted__ne=TRUE)
         if len(job_result) == 0:
             return None
         job = ResultToMeta.result_to_job_meta(job_result[0])
@@ -1001,7 +1006,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.job_meta.JobMeta` object
                  if the job exists, Otherwise, returns None if the job does not exist.
         """
-        job_result = DocumentJob.objects(name=job_name, is_deleted__ne=TRUE)
+        job_result = MongoJob.objects(name=job_name, is_deleted__ne=TRUE)
         if len(job_result) == 0:
             return None
         job = ResultToMeta.result_to_job_meta(job_result[0])
@@ -1036,7 +1041,7 @@ class MongoStore(AbstractStore):
             job.save()
             # update reference field
             if workflow_execution_id is not None:
-                workflow_execution = DocumentWorkflowExecution.objects(uuid=workflow_execution_id).first()
+                workflow_execution = MongoWorkflowExecution.objects(uuid=workflow_execution_id).first()
                 if workflow_execution.job_info is None:
                     workflow_execution.job_info = [job]
                 else:
@@ -1055,7 +1060,7 @@ class MongoStore(AbstractStore):
                    job_id: Text = None, workflow_execution_id: int = None,
                    end_time: int = None, log_uri: Text = None, signature: Text = None) -> Optional[JobMeta]:
         try:
-            job: DocumentJob = DocumentJob.objects(name=job_name, is_deleted__ne=TRUE).first()
+            job: MongoJob = MongoJob.objects(name=job_name, is_deleted__ne=TRUE).first()
             if job is None:
                 return None
             if job_state is not None:
@@ -1090,7 +1095,7 @@ class MongoStore(AbstractStore):
         :return: List of :py:class:`ai_flow.meta.job_meta.JobMeta` objects,
                  return None if no jobs to be listed.
         """
-        job_result = DocumentJob.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
+        job_result = MongoJob.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
         if len(job_result) == 0:
             return None
         job_list = []
@@ -1107,7 +1112,7 @@ class MongoStore(AbstractStore):
         :return: the job uuid if the job is successfully updated, raise an exception if fail to update otherwise.
         """
         try:
-            job_update = DocumentJob.objects(name=job_name).first()
+            job_update = MongoJob.objects(name=job_name).first()
             if job_update is None:
                 return UPDATE_FAIL
             job_update.job_state = job_state
@@ -1125,7 +1130,7 @@ class MongoStore(AbstractStore):
         :return: the job uuid if the job is successfully updated, raise an exception if fail to update otherwise.
         """
         try:
-            job_update = DocumentJob.objects(name=job_name).first()
+            job_update = MongoJob.objects(name=job_name).first()
             if job_update is None:
                 return UPDATE_FAIL
             job_update.end_time = end_time
@@ -1156,10 +1161,10 @@ class MongoStore(AbstractStore):
                  Status.ERROR if the job does not exist otherwise.
         """
         try:
-            job = DocumentJob.objects(name=job_name, is_deleted__ne=TRUE).first()
+            job = MongoJob.objects(name=job_name, is_deleted__ne=TRUE).first()
             if job is None:
                 return Status.ERROR
-            deleted_job_counts = DocumentJob.objects(
+            deleted_job_counts = MongoJob.objects(
                 name__startswith=deleted_character + job_name + deleted_character,
                 is_deleted=TRUE).count()
             job.is_deleted = TRUE
@@ -1179,7 +1184,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.artifact_meta.ArtifactMeta` object
                  if the artifact exists, Otherwise, returns None if the artifact does not exist.
         """
-        artifact_result = DocumentArtifact.objects(uuid=artifact_id, is_deleted__ne=TRUE)
+        artifact_result = MongoArtifact.objects(uuid=artifact_id, is_deleted__ne=TRUE)
         if len(artifact_result) == 0:
             return None
         artifact = ResultToMeta.result_to_artifact_meta(artifact_result[0])
@@ -1193,7 +1198,7 @@ class MongoStore(AbstractStore):
         :return: A single :py:class:`ai_flow.meta.artifact_meta.ArtifactMeta` object
                  if the artifact exists, Otherwise, returns None if the artifact does not exist.
         """
-        artifact_result = DocumentArtifact.objects(name=artifact_name, is_deleted__ne=TRUE)
+        artifact_result = MongoArtifact.objects(name=artifact_name, is_deleted__ne=TRUE)
         if len(artifact_result) == 0:
             return None
         artifact = ResultToMeta.result_to_artifact_meta(artifact_result[0])
@@ -1250,7 +1255,7 @@ class MongoStore(AbstractStore):
                         batch_uri: Text = None, stream_uri: Text = None,
                         update_time: int = None, properties: Properties = None) -> Optional[ArtifactMeta]:
         try:
-            artifact: DocumentArtifact = DocumentArtifact.objects(name=artifact_name, is_deleted__ne=TRUE).first()
+            artifact: MongoArtifact = MongoArtifact.objects(name=artifact_name, is_deleted__ne=TRUE).first()
             if artifact is None:
                 return None
             if data_format is not None:
@@ -1279,7 +1284,7 @@ class MongoStore(AbstractStore):
         :return: List of :py:class:`ai_flow.meta.artifact_meta.py.ArtifactMeta` objects,
                  return None if no artifacts to be listed.
         """
-        artifact_result = DocumentArtifact.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
+        artifact_result = MongoArtifact.objects(is_deleted__ne=TRUE).skip(offset).limit(page_size)
         if len(artifact_result) == 0:
             return None
         artifact_list = []
@@ -1309,10 +1314,10 @@ class MongoStore(AbstractStore):
                  Status.ERROR if the artifact does not exist otherwise.
         """
         try:
-            artifact = DocumentArtifact.objects(name=artifact_name, is_deleted__ne=TRUE).first()
+            artifact = MongoArtifact.objects(name=artifact_name, is_deleted__ne=TRUE).first()
             if artifact is None:
                 return Status.ERROR
-            deleted_artifact_counts = DocumentArtifact.objects(
+            deleted_artifact_counts = MongoArtifact.objects(
                 name__startswith=deleted_character + artifact_name + deleted_character,
                 is_deleted=TRUE).count()
             artifact.is_deleted = TRUE
@@ -1334,7 +1339,7 @@ class MongoStore(AbstractStore):
     def get_model_with_stage(self, model_name, stage):
         if model_name is None:
             raise AIFlowException('Registered model name cannot be empty.', INVALID_PARAMETER_VALUE)
-        model_version = DocumentModelVersion.objects(model_name=model_name, current_stage=stage)
+        model_version = MongoModelVersion.objects(model_name=model_name, current_stage=stage)
         if len(model_version) == 0:
             return None
         else:
@@ -1350,7 +1355,7 @@ class MongoStore(AbstractStore):
         if model_name is None:
             raise AIFlowException('Registered model name cannot be empty.', INVALID_PARAMETER_VALUE)
         
-        register_models = DocumentRegisteredModel.objects(model_name=model_name)
+        register_models = MongoRegisteredModel.objects(model_name=model_name)
 
         if len(register_models) == 0:
             return None
@@ -1375,14 +1380,14 @@ class MongoStore(AbstractStore):
             before_model = self._get_registered_model(model_name=model_name)
             if before_model is not None:
                 if _compare_model_fields(model_type, model_desc, before_model):
-                    registered_model = DocumentRegisteredModel(model_name=model_name,
+                    registered_model = MongoRegisteredModel(model_name=model_name,
                                                                    model_type=model_type,
                                                                    model_desc=model_desc)
                     return registered_model.to_meta_entity()
                 else:
                     raise AIFlowException("You have registered the model with same name: \"{}\" "
                                             "but different fields".format(model_name), RESOURCE_ALREADY_EXISTS)
-            registered_model = DocumentRegisteredModel(model_name=model_name,
+            registered_model = MongoRegisteredModel(model_name=model_name,
                                                        model_type=model_type,
                                                        model_desc=model_desc)
             registered_model.save()
@@ -1446,7 +1451,7 @@ class MongoStore(AbstractStore):
 
         :return: List of :py:class:`ai_flow.model_center.entity.RegisteredModel` objects.
         """
-        return [registered_model.to_detail_entity() for registered_model in DocumentRegisteredModel.objects()]
+        return [registered_model.to_detail_entity() for registered_model in MongoRegisteredModel.objects()]
 
     def get_registered_model_detail(self, registered_model):
         """
@@ -1468,7 +1473,7 @@ class MongoStore(AbstractStore):
         if model_version is None:
             raise AIFlowException('Registered model version cannot be empty.', INVALID_PARAMETER_VALUE)
         
-        model_versions = DocumentModelVersion.objects(model_name=model_name, model_version=model_version, current_stage__ne=STAGE_DELETED)
+        model_versions = MongoModelVersion.objects(model_name=model_name, model_version=model_version, current_stage__ne=STAGE_DELETED)
 
         if len(model_versions) == 0:
             return None
@@ -1483,7 +1488,7 @@ class MongoStore(AbstractStore):
         if model_name is None:
             raise AIFlowException('Registered model name cannot be empty.', INVALID_PARAMETER_VALUE)
         
-        return DocumentModelVersion.objects(model_name=model_name, current_stage__ne=STAGE_DELETED)
+        return MongoModelVersion.objects(model_name=model_name, current_stage__ne=STAGE_DELETED)
 
     @classmethod
     def _count_deleted_model_version(cls, model_version):
@@ -1494,7 +1499,7 @@ class MongoStore(AbstractStore):
         if model_version is None:
             raise AIFlowException('Registered model version cannot be empty.', INVALID_PARAMETER_VALUE)
 
-        return DocumentModelVersion.objects(model_name=model_name,
+        return MongoModelVersion.objects(model_name=model_name,
                                             model_version__startswith=deleted_character + model_version + deleted_character,
                                             current_stage__ne=STAGE_DELETED).count()
 
@@ -1531,7 +1536,7 @@ class MongoStore(AbstractStore):
                     else:
                         version_num = len(model_versions)
                     model_version = next_version(version_num)
-                    doc_model_version = DocumentModelVersion(model_name=model_name,
+                    doc_model_version = MongoModelVersion(model_name=model_name,
                                                              model_version=model_version,
                                                              model_path=model_path,
                                                              model_metric=model_metric,
@@ -1541,7 +1546,7 @@ class MongoStore(AbstractStore):
                     doc_model_version.save()
                     # update reference field
                     if model_name is not None:
-                        registered_model = DocumentRegisteredModel.objects(model_name=model_name).first()
+                        registered_model = MongoRegisteredModel.objects(model_name=model_name).first()
                         if registered_model.model_version is None:
                             registered_model.model_version = [doc_model_version]
                         else:
@@ -1618,7 +1623,6 @@ class MongoStore(AbstractStore):
         doc_model_version.version_desc = None
         doc_model_version.current_stage = STAGE_DELETED
         doc_model_version.save()
-            
 
     def get_model_version_detail(self, model_version):
         """
@@ -1628,47 +1632,6 @@ class MongoStore(AbstractStore):
         """
         doc_model_version = self._get_model_version(model_version)
         return None if doc_model_version is None else doc_model_version.to_meta_entity()
-
-    def add_event(self, event: BaseEvent):
-        doc_event = DocumentEvent()
-        doc_event.key = event.key
-        def next_version():
-            return DocumentModelVersion.objects(key=event.key).count() + 1
-
-        doc_event.create_time = time.time_ns()
-        doc_event.version = next_version()
-        doc_event.value = event.value
-        doc_event.event_type = event.event_type
-        doc_event.save()
-        return doc_event.to_event()
-
-    def list_events(self, key: str, version: int=None):
-        if key is None:
-            raise Exception('key cannot be empty.')
-
-        doc_event_list = []
-        if version is None:
-            doc_event_list = DocumentModelVersion.objects(key=key)
-        else:
-            doc_event_list = DocumentModelVersion.objects(key=key, version__gt=version)
-        event_list = []
-        for e in doc_event_list:
-            event_list.append(e.to_event())
-        return event_list
-
-    def list_all_events(self, start_time: int):
-        doc_event_list = DocumentModelVersion.objects(create_time__gt=start_time)
-        event_list = []
-        for e in doc_event_list:
-            event_list.append(e.to_event())
-        return event_list
-
-    def list_all_events_from_id(self, id: int):
-        doc_event_list = DocumentModelVersion.objects(id__gt=id)
-        event_list = []
-        for e in doc_event_list:
-            event_list.append(e.to_event())
-        return event_list
 
     def register_metric_meta(self,
                              name,
@@ -1733,7 +1696,7 @@ class MongoStore(AbstractStore):
 
     def delete_metric_meta(self, uuid: int):
         try:
-            metric_meta_table = DocumentMetricMeta.objects(uuid=uuid).first()
+            metric_meta_table = MongoMetricMeta.objects(uuid=uuid).first()
             metric_meta_table.is_deleted = TRUE
             metric_meta_table.save()
         except Exception as e:
@@ -1764,7 +1727,7 @@ class MongoStore(AbstractStore):
 
     def delete_metric_summary(self, uuid: int):
         try:
-            metric_summary_table = DocumentMetricSummary.objects(uuid=uuid).first()
+            metric_summary_table = MongoMetricSummary.objects(uuid=uuid).first()
             metric_summary_table.is_deleted = TRUE
             metric_summary_table.save()
         except Exception as e:
@@ -1803,7 +1766,7 @@ class MongoStore(AbstractStore):
         :return:
         """
         try:
-            metric_meta_table: DocumentMetricMeta = DocumentMetricMeta.objects(uuid=uuid, is_deleted__ne=TRUE).first()
+            metric_meta_table: MongoMetricMeta = MongoMetricMeta.objects(uuid=uuid, is_deleted__ne=TRUE).first()
             if name is not None:
                 metric_meta_table.name = name
             if dataset_id is not None:
@@ -1848,7 +1811,7 @@ class MongoStore(AbstractStore):
         :return:
         """
         try:
-            metric_summary_table = DocumentMetricSummary.objects(uuid=uuid, is_deleted__ne=TRUE).first()
+            metric_summary_table = MongoMetricSummary.objects(uuid=uuid, is_deleted__ne=TRUE).first()
             if metric_id is not None:
                 metric_summary_table.metric_id = metric_id
             if metric_key is not None:
@@ -1868,7 +1831,7 @@ class MongoStore(AbstractStore):
         :return:
         """
         try:
-            metric_meta_table = DocumentMetricMeta.objects(name=name, is_deleted__ne=TRUE).first()
+            metric_meta_table = MongoMetricMeta.objects(name=name, is_deleted__ne=TRUE).first()
 
             if metric_meta_table is None:
                 return None
@@ -1887,7 +1850,7 @@ class MongoStore(AbstractStore):
         :return:
         """
         try:
-            metric_meta_tables = DocumentMetricMeta.objects(dataset_id=dataset_id,
+            metric_meta_tables = MongoMetricMeta.objects(dataset_id=dataset_id,
                                                             metric_type=MetricType.DATASET.value,
                                                             is_deleted__ne=TRUE)
 
@@ -1915,7 +1878,7 @@ class MongoStore(AbstractStore):
         :return:
         """
         try:
-            metric_meta_tables = DocumentMetricMeta.objects(model_name=model_name,
+            metric_meta_tables = MongoMetricMeta.objects(model_name=model_name,
                                                             model_version=model_version,
                                                             metric_type=MetricType.MODEL.value,
                                                             is_deleted__ne=TRUE)
@@ -1941,7 +1904,7 @@ class MongoStore(AbstractStore):
         :return:
         """
         try:
-            metric_summary_tables = DocumentMetricSummary.objects(metric_id=metric_id,
+            metric_summary_tables = MongoMetricSummary.objects(metric_id=metric_id,
                                                                is_deleted__ne=TRUE)
 
             if len(metric_summary_tables) == 0:
@@ -1960,34 +1923,39 @@ class MongoStore(AbstractStore):
 
     def list_living_members(self, ttl_ms) -> List[Member]:
         try:
-            member_models = DocumentMember.objects(update_time__gte=time.time_ns() / 1000000 - ttl_ms)
+            member_models = MongoMember.objects(update_time__gte=time.time_ns() / 1000000 - ttl_ms)
             return [Member(m.version, m.server_uri, int(m.update_time)) for m in member_models]
         except Exception as e:
             raise AIFlowException("List living AIFlow Member Error.") from e
 
-    def update_member(self, server_uri, server_uuid):
+    def update_member(self, server_uri, server_id):
         try:
-            member = DocumentMember.objects(server_uri=server_uri).first()
+            member = MongoMember.objects(server_uri=server_uri).first()
             if member is None:
-                member = DocumentMember()
+                member = MongoMember()
                 member.version = 1
                 member.server_uri = server_uri
                 member.update_time = time.time_ns() / 1000000
-                member.uuid = server_uuid
+                member.uuid = server_id
                 member.save()
             else:
-                if member.uuid != server_uuid:
+                if member.uuid != server_id:
                     raise Exception("The server uri '%s' is already exists in the storage!" %
                                     server_uri)
                 member.version += 1
                 member.update_time = time.time_ns() / 1000000
+                member.save()
         except Exception as e:
             raise AIFlowException("Update AIFlow Member Error.") from e
 
     def clear_dead_members(self, ttl_ms):
         try:
-            member = DocumentMember.objects(update_time__lt=time.time_ns() / 1000000 - ttl_ms).first()
-            member.delete()
+            members = MongoMember.objects(update_time__lt=time.time_ns() / 1000000 - ttl_ms)
+            if len(members) == 0:
+                return None
+            else:
+                for member in members:
+                    member.delete()
         except Exception as e:
             raise AIFlowException("Clear dead AIFlow Member Error.") from e
 
@@ -2039,15 +2007,14 @@ class MongoStoreConnManager(object):
             cls._instance = object.__new__(cls, *args, **kwargs)
         return cls._instance
 
-    def connect(self, db_uri):
-        _, _, _, _, db = parse_mongo_uri(db_uri)
+    def connect(self, db_uri, db_name, db_alias=MONGO_DB_ALIAS_META_SERVICE):
         if db_uri not in self._conns:
-            self._conns[db_uri] = mongoengine.connect(db, host=db_uri, alias=MONGO_DB_ALIAS_META_SERVICE)
+            self._conns[db_uri] = mongoengine.connect(db_name, host=db_uri, alias=db_alias)
             self._connected_uris.add(db_uri)
     
-    def disconnect(self, db_uri):
+    def disconnect(self, db_uri, db_alias=MONGO_DB_ALIAS_META_SERVICE):
         if db_uri in self._conns:
-            mongoengine.disconnect(alias=db_uri)
+            mongoengine.disconnect(alias=db_alias)
             self._connected_uris.remove(db_uri)
             self._closed_uris.add(db_uri)
     

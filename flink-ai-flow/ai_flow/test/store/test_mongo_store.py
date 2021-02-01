@@ -25,12 +25,22 @@ import sqlalchemy
 
 from ai_flow.store.db.base_model import base
 from ai_flow.store.mongo_store import MongoStore, MongoStoreConnManager
+from ai_flow.store.db.db_util import parse_mongo_uri
+from ai_flow.rest_endpoint.service.exception import AIFlowException
 from ai_flow.test.test_util import get_mongodb_server_url
 from ai_flow.test.store.common import AbstractTestStore
 
 
 def _get_store(db_uri=''):
-    return MongoStore(db_uri)
+    try:
+        username, password, host, port, db = parse_mongo_uri(db_uri)
+        return MongoStore(host=host,
+                          port=int(port),
+                          username=username,
+                          password=password,
+                          db=db)
+    except Exception as e:
+        raise AIFlowException(str(e))
 
 
 @unittest.skip("To run this test you need to configure the mongodb info in 'ai_flow/test/test_util.py'")
