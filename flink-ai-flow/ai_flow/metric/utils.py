@@ -26,7 +26,7 @@ from ai_flow.meta.metric_meta import MetricMeta, MetricType, MetricSummary
 from ai_flow.rest_endpoint.protobuf.message_pb2 import MetricMetaProto, MetricSummaryProto, MetricTypeProto, ReturnCode, \
     SUCCESS, RESOURCE_DOES_NOT_EXIST
 from ai_flow.store.db.db_model import SqlMetricMeta, SqlMetricSummary
-from ai_flow.store.db.db_model import DocumentMetricSummary, DocumentMetricMeta
+from ai_flow.store.db.db_model import MongoMetricSummary, MongoMetricMeta
 
 
 def table_to_metric_meta(metric_meta_result) -> MetricMeta:
@@ -71,7 +71,7 @@ def metric_meta_to_table(name: Text,
     if properties is not None:
         properties = str(properties)
     if store_type == 'MongoStore':
-        _class = DocumentMetricMeta
+        _class = MongoMetricMeta
     else:
         _class = SqlMetricMeta
     return _class(name=name,
@@ -93,7 +93,7 @@ def metric_summary_to_table(metric_id: int,
                             metric_value: Text,
                             store_type: Text = 'SqlAlchemyStore'):
     if store_type == 'MongoStore':
-        _class = DocumentMetricSummary
+        _class = MongoMetricSummary
     else:
         _class = SqlMetricSummary
     return _class(metric_id=metric_id,

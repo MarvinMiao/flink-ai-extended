@@ -22,9 +22,9 @@ from ai_flow.meta.example_meta import ExampleMeta
 from ai_flow.rest_endpoint.service.exception import AIFlowException
 from ai_flow.store.db.db_model import SqlExample, SqlProject, SqlJob, SqlWorkflowExecution, SqlModelRelation, \
     SqlModelVersionRelation, SqlArtifact
-from ai_flow.store.db.db_model import (DocumentProject, DocumentExample, DocumentJob,
-                                       DocumentArtifact, DocumentWorkflowExecution,
-                                       DocumentModelRelation, DocumentModelVersionRelation)
+from ai_flow.store.db.db_model import (MongoProject, MongoExample, MongoJob,
+                                       MongoArtifact, MongoWorkflowExecution,
+                                       MongoModelRelation, MongoModelVersionRelation)
 
 
 class MetaToTable:
@@ -46,7 +46,7 @@ class MetaToTable:
         else:
             data_type_list = None
         if store_type == 'MongoStore':
-            _class = DocumentExample
+            _class = MongoExample
         else:
             _class = SqlExample
         return _class(name=name, support_type=support_type, data_type=data_type, format=data_format,
@@ -106,7 +106,7 @@ class MetaToTable:
         if properties is not None:
             properties = str(properties)
         if store_type == 'MongoStore':
-            _class = DocumentProject
+            _class = MongoProject
         else:
             _class = SqlProject
         return _class(name=name, properties=properties, uri=uri, user=user, password=password,
@@ -118,7 +118,7 @@ class MetaToTable:
         if properties is not None:
             properties = str(properties)
         if store_type == 'MongoStore':
-            _class = DocumentJob
+            _class = MongoJob
         else:
             _class = SqlJob
         return _class(job_id=job_id, name=name, properties=properties, start_time=start_time, end_time=end_time,
@@ -131,7 +131,7 @@ class MetaToTable:
         if properties is not None:
             properties = str(properties)
         if store_type == 'MongoStore':
-            _class = DocumentArtifact
+            _class = MongoArtifact
         else:
             _class = SqlArtifact
         return _class(name=name, data_format=data_format, description=description, batch_uri=batch_uri,
@@ -145,7 +145,7 @@ class MetaToTable:
         if properties is not None:
             properties = str(properties)
         if store_type == 'MongoStore':
-            _class = DocumentWorkflowExecution
+            _class = MongoWorkflowExecution
         else:
             _class = SqlWorkflowExecution
         return _class(name=name, properties=properties, start_time=start_time, end_time=end_time,
@@ -156,7 +156,7 @@ class MetaToTable:
     @staticmethod
     def model_relation_meta_to_table(name, project_id, store_type='SqlAlchemyStore'):
         if store_type == 'MongoStore':
-            _class = DocumentModelRelation
+            _class = MongoModelRelation
         else:
             _class = SqlModelRelation
         return _class(name=name, project_id=project_id)
@@ -164,7 +164,7 @@ class MetaToTable:
     @staticmethod
     def model_version_relation_to_table(version, model_id, workflow_execution_id, store_type='SqlAlchemyStore'):
         if store_type == 'MongoStore':
-            _class = DocumentModelVersionRelation
+            _class = MongoModelVersionRelation
         else:
             _class = SqlModelVersionRelation
         return _class(version=version, model_id=model_id,

@@ -77,7 +77,7 @@ class AIFlowMaster(object):
                 port=str(self.master_config.get_master_port()),
                 start_default_notification=self.master_config.start_default_notification(),
                 notification_uri=self.master_config.get_notification_uri(),
-                server_uri=self.master_config.get_master_ip() + ":" + self.master_config.get_master_port(),
+                server_uri=self.master_config.get_master_ip() + ":" + str(self.master_config.get_master_port()),
                 ttl_ms=self.master_config.get_ha_ttl_ms())
         self.server.run(is_block=is_block)
 
@@ -100,6 +100,8 @@ class AIFlowMaster(object):
             store = SqlAlchemyStore(self.master_config.get_db_uri())
             base.metadata.drop_all(store.db_engine)
             base.metadata.create_all(store.db_engine)
+        elif self.master_config.get_db_type() == DBType.MONGODB:
+            MongoStoreConnManager().drop_all()
 
 
 def set_master_config():

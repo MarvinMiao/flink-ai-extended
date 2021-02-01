@@ -380,7 +380,7 @@ class SqlMember(base):
             self.id, self.version, self.server_uri, self.update_time, self.uuid)
 
 
-class DocumentExample(Document):
+class MongoExample(Document):
     """
     Document of example in metadata backend storage.
     """
@@ -421,7 +421,7 @@ class DocumentExample(Document):
             self.stream_uri)
 
 
-class DocumentModelVersionRelation(Document):
+class MongoModelVersionRelation(Document):
     """
     Document of model version relation in metadata backend storage.
     """
@@ -429,8 +429,8 @@ class DocumentModelVersionRelation(Document):
     version = StringField(max_length=255, required=True, unique=True)
     model_id = IntField()
     workflow_execution_id = IntField()
-    version_model_uuid_unique = StringField(max_length=1000, required=True, unique=True)
-    version_workflow_execution_uuid_unique = StringField(max_length=1000, required=True, unique=True)
+    version_model_id_unique = StringField(max_length=1000, required=True, unique=True)
+    version_workflow_execution_id_unique = StringField(max_length=1000, required=True, unique=True)
     is_deleted = BooleanField(default=False)
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
@@ -439,8 +439,8 @@ class DocumentModelVersionRelation(Document):
         version = kwargs['version']
         model_id = kwargs['model_id']
         workflow_execution_id = kwargs['workflow_execution_id']
-        kwargs['version_model_uuid_unique'] = f'{version}-{model_id}'
-        kwargs['version_workflow_execution_uuid_unique'] = f'{version}-{workflow_execution_id}'
+        kwargs['version_model_id_unique'] = f'{version}-{model_id}'
+        kwargs['version_workflow_execution_id_unique'] = f'{version}-{workflow_execution_id}'
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
@@ -450,7 +450,7 @@ class DocumentModelVersionRelation(Document):
             self.workflow_execution_id)
 
 
-class DocumentModelRelation(Document):
+class MongoModelRelation(Document):
     """
     Document of model relation in metadata backend storage.
     """
@@ -460,7 +460,7 @@ class DocumentModelRelation(Document):
     project_id = IntField()
     is_deleted = BooleanField(default=False)
 
-    model_version_relation = ListField(ReferenceField(DocumentModelVersionRelation))
+    model_version_relation = ListField(ReferenceField(MongoModelVersionRelation))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
     
@@ -471,7 +471,7 @@ class DocumentModelRelation(Document):
             self.project_id)
 
 
-class DocumentJob(Document):
+class MongoJob(Document):
     """
     Document of job in metadata backend storage.
     """
@@ -504,7 +504,7 @@ class DocumentJob(Document):
             self.workflow_execution_id)
 
 
-class DocumentWorkflowExecution(Document):
+class MongoWorkflowExecution(Document):
     """
     Document of workflow execution in metadata backend storage.
     """
@@ -521,8 +521,8 @@ class DocumentWorkflowExecution(Document):
     signature = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
 
-    job_info = ListField(ReferenceField(DocumentJob))
-    model_version_relation = ListField(ReferenceField(DocumentModelVersionRelation))
+    job_info = ListField(ReferenceField(MongoJob))
+    model_version_relation = ListField(ReferenceField(MongoModelVersionRelation))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
@@ -537,10 +537,10 @@ class DocumentWorkflowExecution(Document):
             self.log_uri,
             self.workflow_json,
             self.signature,
-            self.project_uuid)
+            self.project_id)
 
 
-class DocumentProject(Document):
+class MongoProject(Document):
     """
     Document of project in metadata backend storage.
     """
@@ -554,8 +554,8 @@ class DocumentProject(Document):
     uri = StringField(max_length=1000)
     is_deleted = BooleanField(default=False)
 
-    model_relation = ListField(ReferenceField(DocumentModelRelation))
-    workflow_execution = ListField(ReferenceField(DocumentWorkflowExecution))
+    model_relation = ListField(ReferenceField(MongoModelRelation))
+    workflow_execution = ListField(ReferenceField(MongoWorkflowExecution))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
@@ -570,7 +570,7 @@ class DocumentProject(Document):
             self.uri)
 
 
-class DocumentWorkflow(Document):
+class MongoWorkflow(Document):
     """
     Document of workflow in metadata backend storage.
     """
@@ -588,10 +588,10 @@ class DocumentWorkflow(Document):
             self.uuid,
             self.name,
             self.properties,
-            self.project_uuid)
+            self.project_id)
 
 
-class DocumentModelVersion(Document):
+class MongoModelVersion(Document):
     """
     Document of model version in Model Center backend storage.
     """
@@ -639,7 +639,7 @@ class DocumentModelVersion(Document):
                                   self.current_stage)
 
 
-class DocumentRegisteredModel(Document):
+class MongoRegisteredModel(Document):
     """
     Document of registered model in Model Center backend storage.
     """
@@ -648,7 +648,7 @@ class DocumentRegisteredModel(Document):
     model_type = StringField(max_length=500)
     model_desc = StringField(max_length=1000)
 
-    model_version = ListField(ReferenceField(DocumentModelVersion))
+    model_version = ListField(ReferenceField(MongoModelVersion))
 
     meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
 
@@ -670,39 +670,7 @@ class DocumentRegisteredModel(Document):
         return RegisteredModelDetail(self.model_name, self.model_type, self.model_desc, latest_version)
 
 
-class DocumentEvent(Document):
-    """
-    Document of event in Notification Service backend storage.
-    """
-
-    id = SequenceField(db_alias=MONGO_DB_ALIAS_META_SERVICE)
-    key = StringField(max_length=1024, required=True)
-    version = IntField(required=True)
-    value = Column(String(1024))
-    event_type = Column(String(256))
-    create_time = LongField()
-
-    meta = {'db_alias': MONGO_DB_ALIAS_META_SERVICE}
-
-    def __repr__(self):
-        return '<Document Event ({}, {}, {}, {}, {} {})>'.format(
-            self.pk,
-            self.key,
-            self.value,
-            self.version,
-            self.event_type,
-            self.create_time)
-
-    def to_event(self):
-        return BaseEvent(self.key,
-                         self.value,
-                         self.event_type,
-                         self.version,
-                         self.create_time,
-                         self.pk)
-
-
-class DocumentArtifact(Document):
+class MongoArtifact(Document):
     """
     Document of artifact in metadata backend storage.
     """
@@ -734,7 +702,7 @@ class DocumentArtifact(Document):
             self.is_deleted)
 
 
-class DocumentMetricMeta(Document):
+class MongoMetricMeta(Document):
     """
     Document of metric meta
     """
@@ -771,7 +739,7 @@ class DocumentMetricMeta(Document):
                     self.properties)
 
 
-class DocumentMetricSummary(Document):
+class MongoMetricSummary(Document):
     """
     Document of metric summary
     """
@@ -788,12 +756,11 @@ class DocumentMetricSummary(Document):
         return '<Document MetricSummary ({}, {}, {})>'.format(self.metric_id, self.metric_key, self.metric_value)
 
 
-class DocumentMember(Document):
+class MongoMember(Document):
     """
     Document of cluster member.
     """
 
-    id = SequenceField(unique=True)
     version = LongField(required=True)
     server_uri = StringField(max_length=767, required=True, unique=True)
     update_time = LongField(required=True)
