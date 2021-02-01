@@ -123,7 +123,7 @@ class HighAvailableAIFlowServer(AIFlowServer):
         if ha_storage is None:
             db_engine = extract_db_engine_from_uri(store_uri)
             if DBType.value_of(db_engine) == DBType.MONGODB:
-                username, password, host, port, db = parse_mongo_uri(self.db_uri)
+                username, password, host, port, db = parse_mongo_uri(store_uri)
                 ha_storage = MongoStore(host=host,
                                         port=int(port),
                                         username=username,
