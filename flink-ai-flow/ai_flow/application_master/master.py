@@ -21,6 +21,7 @@ from typing import Text
 from ai_flow.rest_endpoint.service.server import AIFlowServer, HighAvailableAIFlowServer
 from ai_flow.store.db.base_model import base
 from ai_flow.store.sqlalchemy_store import SqlAlchemyStore
+from ai_flow.store.mongo_store import MongoStoreConnManager
 from ai_flow.application_master.master_config import MasterConfig, DBType
 from ai_flow.client.ai_flow_client import get_ai_flow_client
 import logging
@@ -91,6 +92,8 @@ class AIFlowMaster(object):
             store = SqlAlchemyStore(self.master_config.get_db_uri())
             base.metadata.drop_all(store.db_engine)
             os.remove(self.master_config.get_sql_lite_db_file())
+        elif self.master_config.get_db_type() == DBType.MONGODB:
+            MongoStoreConnManager().disconnect_all()
 
     def _clear_db(self):
         if self.master_config.get_db_type() == DBType.SQLITE:

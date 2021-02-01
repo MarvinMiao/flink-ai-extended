@@ -24,13 +24,20 @@ from ai_flow.rest_endpoint.protobuf.message_pb2 import Response, ReturnCode
 from ai_flow.rest_endpoint.protobuf.metric_service_pb2_grpc import MetricServiceServicer
 from ai_flow.rest_endpoint.service.util import catch_exception
 from ai_flow.store.sqlalchemy_store import SqlAlchemyStore
+from ai_flow.store.mongo_store import MongoStore
+from ai_flow.store.db.db_util import extract_db_engine_from_uri
+from ai_flow.application_master.master_config import DBType
 
 
 class MetricService(MetricServiceServicer):
 
     def __init__(self, db_uri):
         self.db_uri = db_uri
-        self.store = SqlAlchemyStore(db_uri)
+        db_engine = extract_db_engine_from_uri(self.db_uri)
+        if DBType.value_of(db_engine) == DBType.MONGODB:
+            self.store = MongoStore(self.db_uri)
+        else:
+            self.store = SqlAlchemyStore(self.db_uri)
 
     @catch_exception
     def registerMetricMeta(self, request, context):
