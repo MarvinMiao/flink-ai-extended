@@ -25,6 +25,10 @@ def load_yaml_file(file_path) -> Dict:
         return yaml.load(f, Loader=yaml.FullLoader)
 
 
+def dump_yaml_str(data: Dict) -> str:
+    return yaml.dump(data=data, sort_keys=True)
+
+
 def dump_yaml_file(data: Dict, file_path):
     with open(file_path, 'w') as f:
         return yaml.dump(data=data, stream=f, sort_keys=True)

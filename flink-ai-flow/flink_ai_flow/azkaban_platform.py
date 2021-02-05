@@ -16,12 +16,15 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-import threading
-import logging
-import traceback
-from typing import Text, List
+from typing import Text, Dict
 
-from ai_flow.plugins.platform import AbstractPlatform, AbstractJobStatusListener, AbstractJobHandler
+from ai_flow.plugins.platform import AbstractPlatform, AbstractJobStatusListener
+from flink_ai_flow.vvp.vvp_restful_api import VVPRestful
+from flink_ai_flow.vvp_platform import VVPJobHandler, VVPJobStatusListener
+
+
+AzkabanJobHandler = VVPJobHandler
+AzkabanJobStatusListener = VVPJobStatusListener
 
 
 class AzkabanPlatform(AbstractPlatform):
@@ -33,41 +36,10 @@ class AzkabanPlatform(AbstractPlatform):
     def platform() -> Text:
         return 'azkaban'
 
+    @staticmethod
+    def generate_job_handler(json_conf: Dict):
+        base_url = json_conf.pop("base_url")
+        namespace = json_conf.pop("namespace")
+        token = json_conf.pop("token", None)
 
-class AzkabanJobStatusListener(AbstractJobStatusListener):
-    def __init__(self):
-        super().__init__(platform='azkaban')
-        self.job_handles: List[AbstractJobHandler] = []
-        self.status_map = {}
-        self.running = True
-        self.lock = threading.Lock()
-
-    # TODO
-    # implement it!!
-    def listen(self):
-        raise NotImplementedError("please implement listen")
-
-    def run(self) -> None:
-        try:
-            self.listen()
-        except Exception as e:
-            logging.info(e)
-            traceback.print_exc()
-
-    # TODO
-    # implement it!!
-    def start_listen(self):
-        raise NotImplementedError("please implement start_listen")
-
-    # TODO
-    # implement it!!
-    def stop_listen(self):
-        raise NotImplementedError("please implement stop_listen")
-
-    def register_job_listening(self, job_handler: AbstractJobHandler):
-        # since the api server will push the pod status changing event to watcher, there is no need to register
-        # kubernetes job listening explicitly.
-        pass
-
-    def stop_job_listening(self, job_id: Text):
-        pass
+        return VVPRestful(base_url=base_url, namespace=namespace, token=token)

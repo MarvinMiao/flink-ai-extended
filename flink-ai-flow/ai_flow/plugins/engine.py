@@ -46,9 +46,3 @@ class DummyEngine(AbstractEngine):
     @staticmethod
     def engine() -> Text:
         return 'dummy'
-
-
-class NSEngine(AbstractEngine):
-    @staticmethod
-    def engine() -> Text:
-        return 'notification_service'

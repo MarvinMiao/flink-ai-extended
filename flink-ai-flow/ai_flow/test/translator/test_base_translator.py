@@ -19,8 +19,15 @@
 import unittest
 
 import ai_flow as af
+from ai_flow.common import json_utils
+import python_ai_flow
+from ai_flow.api.configuration import *
+from ai_flow import translator
+from ai_flow.test import test_util
 from ai_flow.executor.executor import CmdExecutor
 from ai_flow.translator.base_translator import *
+from ai_flow.application_master.master import AIFlowMaster
+from ai_flow.application_master.master_config import MasterConfig, DBType
 
 
 def build_ai_graph_node(size) -> AIGraph:
@@ -47,6 +54,17 @@ def add_control_edge(graph, src, target):
 
 
 class TestTranslator(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        config = MasterConfig()
+        config.set_db_uri(db_type=DBType.SQLITE, uri="sqlite:///sql.db")
+        cls.master = AIFlowMaster(config_file=test_util.get_master_config_file())
+        cls.master.start(is_block=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.master.stop()
 
     def test_split_graph(self):
         def build_ai_graph() -> AIGraph:
@@ -336,6 +354,36 @@ class TestTranslator(unittest.TestCase):
         except Exception as e:
             exception_flag = True
         self.assertTrue(True, exception_flag)
+
+    def test_translate_workflow(self):
+        def build_ai_graph() -> AIGraph:
+            graph = build_ai_graph_node(14)
+
+            add_data_edge(graph, 1, 0)
+            add_data_edge(graph, 2, 1)
+            add_data_edge(graph, 3, 2)
+            add_data_edge(graph, 4, 2)
+            add_data_edge(graph, 5, 3)
+            add_data_edge(graph, 6, 4)
+            add_data_edge(graph, 7, 0)
+            add_data_edge(graph, 8, 7)
+            add_data_edge(graph, 13, 1)
+
+            add_control_edge(graph, 6, 3)
+            add_control_edge(graph, 9, 6)
+            add_control_edge(graph, 8, 9)
+            add_control_edge(graph, 11, 1)
+            add_control_edge(graph, 0, 12)
+            return graph
+
+        graph: AIGraph = build_ai_graph()
+        tmp_translator = get_default_translator()
+        proj_desc = ProjectDesc()
+        proj_desc.project_config.set_master_ip("localhost")
+        proj_desc.project_config.set_master_port("50051")
+        proj_desc.project_config.set_project_name("test_project")
+        workflow = tmp_translator.translate(graph, proj_desc)
+        print("#####workflow: {}".format(json_utils.dumps(workflow)))
 
 
 if __name__ == '__main__':

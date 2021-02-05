@@ -30,6 +30,10 @@ class ExecutionMode(str, Enum):
     STREAM = 'STREAM'
 
     @staticmethod
+    def get_all_values():
+        return map(str, ExecutionMode.__members__)
+
+    @staticmethod
     def value_of(exec_type):
         if exec_type in ('BATCH', 'batch'):
             return ExecutionMode.BATCH

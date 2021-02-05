@@ -16,12 +16,11 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-from typing import Text, List
+from typing import Text
 from ai_flow.common.properties import ExecuteProperties
 from ai_flow.meta.model_meta import ModelMeta, ModelVersionMeta
 from ai_flow.executor.executor import BaseExecutor
 from ai_flow.graph.ai_nodes.executable import ExecutableNode
-from ai_flow.graph.channel import Channel
 
 
 class Predictor(ExecutableNode):

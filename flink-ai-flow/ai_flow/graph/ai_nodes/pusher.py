@@ -19,7 +19,6 @@
 from typing import Text, List
 from ai_flow.common.properties import ExecuteProperties
 from ai_flow.meta.model_meta import ModelMeta, ModelVersionMeta
-from ai_flow.meta.artifact_meta import ArtifactMeta
 from ai_flow.executor.executor import BaseExecutor
 from ai_flow.graph.ai_nodes.executable import ExecutableNode
 from ai_flow.graph.channel import Channel, NoneChannel
@@ -44,4 +43,3 @@ class Pusher(ExecutableNode):
 
     def outputs(self) -> List[Channel]:
         return [NoneChannel(self.instance_id)]
-

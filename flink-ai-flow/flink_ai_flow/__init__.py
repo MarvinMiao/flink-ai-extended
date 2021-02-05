@@ -25,9 +25,11 @@ from flink_ai_flow.flink_executor import FlinkJavaExecutor, FlinkPythonExecutor
 from flink_ai_flow.vvp_platform import VVPPlatform
 from flink_ai_flow.vvp_flink_job import VVPFlinkJobPlugin, VVPJobConfig
 from flink_ai_flow.vvp import default_flink_config, default_logging, default_resources, default_flink_image_info
+from flink_ai_flow.azkaban_flink_job import AzkabanJobConfig, AzkabanFlinkJob, AzkabanFlinkJobPlugin
 
 
 register_job_plugin(LocalFlinkJobPlugin())
 register_job_plugin(KubernetesFlinkJobPlugin())
 register_platform(VVPPlatform)
 register_job_plugin(VVPFlinkJobPlugin())
+register_job_plugin(AzkabanFlinkJobPlugin())
