@@ -123,6 +123,7 @@ message MemberProto {
     int64 version = 1;
     string server_uri = 2;
     int64 update_time = 3;
+    string proxy_uri = 4;
 }
 
 message Notify {

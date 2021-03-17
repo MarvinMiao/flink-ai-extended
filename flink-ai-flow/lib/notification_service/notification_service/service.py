@@ -279,9 +279,11 @@ class HighAvailableNotificationService(NotificationService):
                  server_uri,
                  ha_storage,
                  ttl_ms: int = 10000,
-                 min_notify_interval_ms: int = 100):
+                 min_notify_interval_ms: int = 100,
+                 proxy_uri: str = ""):
         super(HighAvailableNotificationService, self).__init__(storage)
         self.server_uri = server_uri
+        self.proxy_uri = proxy_uri
         self.ha_storage = ha_storage
         self.ttl_ms = ttl_ms
         self.min_notify_interval_ms = min_notify_interval_ms
@@ -293,7 +295,8 @@ class HighAvailableNotificationService(NotificationService):
                               self.ha_storage,
                               self.ttl_ms,
                               self.min_notify_interval_ms,
-                              self.member_updated_condition)
+                              self.member_updated_condition,
+                              self.proxy_uri)
 
     def stop(self):
         self.ha_manager.stop()

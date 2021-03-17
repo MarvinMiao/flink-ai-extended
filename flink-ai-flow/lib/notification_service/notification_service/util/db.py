@@ -219,6 +219,7 @@ class MemberModel(Base):
     server_uri = Column(String(767), nullable=False, unique=True)
     update_time = Column(BigInteger(), nullable=False)
     uuid = Column(String(128), nullable=False, unique=True)
+    proxy_uri = Column(String(767), nullable=True, unique=False)
 
     @staticmethod
     def create_table(db_conn=None):
@@ -237,7 +238,7 @@ class MemberModel(Base):
 
     @staticmethod
     @provide_session
-    def update_member(server_uri, server_uuid, session=None):
+    def update_member(server_uri, server_uuid, session=None, proxy_uri=None):
         member = session.query(MemberModel) \
             .filter(MemberModel.server_uri == server_uri).first()
         if member is None:
@@ -246,6 +247,7 @@ class MemberModel(Base):
             member.server_uri = server_uri
             member.update_time = time.time_ns() / 1000000
             member.uuid = server_uuid
+            member.proxy_uri = proxy_uri
             session.add(member)
         else:
             if member.uuid != server_uuid:
@@ -261,7 +263,7 @@ class MemberModel(Base):
         member_models = session.query(MemberModel) \
             .filter(MemberModel.update_time >= time.time_ns() / 1000000 - ttl) \
             .all()
-        return [Member(m.version, m.server_uri, int(m.update_time)) for m in member_models]
+        return [Member(m.version, m.server_uri, int(m.update_time), m.proxy_uri) for m in member_models]
 
     @staticmethod
     @provide_session
@@ -269,7 +271,7 @@ class MemberModel(Base):
         member_models = session.query(MemberModel) \
             .filter(MemberModel.update_time < time.time_ns() / 1000000 - ttl) \
             .all()
-        return [Member(m.version, m.server_uri, int(m.update_time)) for m in member_models]
+        return [Member(m.version, m.server_uri, int(m.update_time), m.proxy_uri) for m in member_models]
 
     @staticmethod
     @provide_session
