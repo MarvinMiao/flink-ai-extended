@@ -441,6 +441,9 @@ class NotificationClient(BaseNotification):
             self.list_member_thread.join()
 
     def _list_members(self):
+        def get_member_uri(member):  # return member's proxy uri is exists
+            return member.proxy_uri if member.proxy_uri else member.server_uri
+
         while self.ha_running:
             # sleep for a `list_member_interval`
             # sleep_and_detecting_running(self.list_member_interval_ms,
@@ -451,11 +454,12 @@ class NotificationClient(BaseNotification):
             response = self.notification_stub.listMembers(request)
             if response.return_code == ReturnStatus.SUCCESS:
                 with self.ha_change_lock:
-                    self.living_members = [proto_to_member(proto).server_uri
+                    self.living_members = [get_member_uri(proto_to_member(proto))
                                            for proto in response.members]
+                    print(f"####living members: {self.living_members}")
             else:
                 logging.error("Exception thrown when updating the living members: %s" %
-                          response.return_msg)
+                              response.return_msg)
 
     def _ha_wrapper(self, func):
         @wraps(func)

@@ -64,11 +64,11 @@ def event_model_to_event(event_model):
 
 def member_to_proto(member: Member):
     return notification_service_pb2.MemberProto(
-        version=member.version, server_uri=member.server_uri, update_time=member.update_time)
+        version=member.version, server_uri=member.server_uri, update_time=member.update_time, proxy_uri=member.proxy_uri)
 
 
 def proto_to_member(member_proto):
-    return Member(member_proto.version, member_proto.server_uri, member_proto.update_time)
+    return Member(member_proto.version, member_proto.server_uri, member_proto.update_time, member_proto.proxy_uri)
 
 
 def sleep_and_detecting_running(interval_ms, is_running_callable, min_interval_ms=500):

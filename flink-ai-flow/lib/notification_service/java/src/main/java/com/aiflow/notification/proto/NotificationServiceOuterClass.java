@@ -7640,6 +7640,18 @@ public final class NotificationServiceOuterClass {
      * @return The updateTime.
      */
     long getUpdateTime();
+
+    /**
+     * <code>string proxy_uri = 4;</code>
+     * @return The proxyUri.
+     */
+    java.lang.String getProxyUri();
+    /**
+     * <code>string proxy_uri = 4;</code>
+     * @return The bytes for proxyUri.
+     */
+    com.google.protobuf.ByteString
+        getProxyUriBytes();
   }
   /**
    * Protobuf type {@code notification_service.MemberProto}
@@ -7655,6 +7667,7 @@ public final class NotificationServiceOuterClass {
     }
     private MemberProto() {
       serverUri_ = "";
+      proxyUri_ = "";
     }
 
     @java.lang.Override
@@ -7701,6 +7714,12 @@ public final class NotificationServiceOuterClass {
             case 24: {
 
               updateTime_ = input.readInt64();
+              break;
+            }
+            case 34: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              proxyUri_ = s;
               break;
             }
             default: {
@@ -7795,6 +7814,44 @@ public final class NotificationServiceOuterClass {
       return updateTime_;
     }
 
+    public static final int PROXY_URI_FIELD_NUMBER = 4;
+    private volatile java.lang.Object proxyUri_;
+    /**
+     * <code>string proxy_uri = 4;</code>
+     * @return The proxyUri.
+     */
+    @java.lang.Override
+    public java.lang.String getProxyUri() {
+      java.lang.Object ref = proxyUri_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        proxyUri_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string proxy_uri = 4;</code>
+     * @return The bytes for proxyUri.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getProxyUriBytes() {
+      java.lang.Object ref = proxyUri_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        proxyUri_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -7818,6 +7875,9 @@ public final class NotificationServiceOuterClass {
       if (updateTime_ != 0L) {
         output.writeInt64(3, updateTime_);
       }
+      if (!getProxyUriBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 4, proxyUri_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -7837,6 +7897,9 @@ public final class NotificationServiceOuterClass {
       if (updateTime_ != 0L) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(3, updateTime_);
+      }
+      if (!getProxyUriBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(4, proxyUri_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -7859,6 +7922,8 @@ public final class NotificationServiceOuterClass {
           .equals(other.getServerUri())) return false;
       if (getUpdateTime()
           != other.getUpdateTime()) return false;
+      if (!getProxyUri()
+          .equals(other.getProxyUri())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -7878,6 +7943,8 @@ public final class NotificationServiceOuterClass {
       hash = (37 * hash) + UPDATE_TIME_FIELD_NUMBER;
       hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
           getUpdateTime());
+      hash = (37 * hash) + PROXY_URI_FIELD_NUMBER;
+      hash = (53 * hash) + getProxyUri().hashCode();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -8017,6 +8084,8 @@ public final class NotificationServiceOuterClass {
 
         updateTime_ = 0L;
 
+        proxyUri_ = "";
+
         return this;
       }
 
@@ -8046,6 +8115,7 @@ public final class NotificationServiceOuterClass {
         result.version_ = version_;
         result.serverUri_ = serverUri_;
         result.updateTime_ = updateTime_;
+        result.proxyUri_ = proxyUri_;
         onBuilt();
         return result;
       }
@@ -8103,6 +8173,10 @@ public final class NotificationServiceOuterClass {
         }
         if (other.getUpdateTime() != 0L) {
           setUpdateTime(other.getUpdateTime());
+        }
+        if (!other.getProxyUri().isEmpty()) {
+          proxyUri_ = other.proxyUri_;
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -8267,6 +8341,82 @@ public final class NotificationServiceOuterClass {
       public Builder clearUpdateTime() {
         
         updateTime_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object proxyUri_ = "";
+      /**
+       * <code>string proxy_uri = 4;</code>
+       * @return The proxyUri.
+       */
+      public java.lang.String getProxyUri() {
+        java.lang.Object ref = proxyUri_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          proxyUri_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string proxy_uri = 4;</code>
+       * @return The bytes for proxyUri.
+       */
+      public com.google.protobuf.ByteString
+          getProxyUriBytes() {
+        java.lang.Object ref = proxyUri_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          proxyUri_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string proxy_uri = 4;</code>
+       * @param value The proxyUri to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProxyUri(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        proxyUri_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string proxy_uri = 4;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearProxyUri() {
+        
+        proxyUri_ = getDefaultInstance().getProxyUri();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string proxy_uri = 4;</code>
+       * @param value The bytes for proxyUri to set.
+       * @return This builder for chaining.
+       */
+      public Builder setProxyUriBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        proxyUri_ = value;
         onChanged();
         return this;
       }
@@ -14178,44 +14328,44 @@ public final class NotificationServiceOuterClass {
       "ace\030\002 \001(\t\022\027\n\017timeout_seconds\030\003 \001(\005\"T\n\030Ge" +
       "tLatestVersionResponse\022\023\n\013return_code\030\001 " +
       "\001(\t\022\022\n\nreturn_msg\030\002 \001(\t\022\017\n\007version\030\003 \001(\003" +
-      "\"G\n\013MemberProto\022\017\n\007version\030\001 \001(\003\022\022\n\nserv" +
-      "er_uri\030\002 \001(\t\022\023\n\013update_time\030\003 \001(\003\"(\n\006Not" +
-      "ify\022\013\n\003key\030\001 \001(\t\022\021\n\tnamespace\030\002 \001(\t\"?\n\rN" +
-      "otifyRequest\022.\n\010notifies\030\001 \003(\0132\034.notific" +
-      "ation_service.Notify\"]\n\016NotifyResponse\0227" +
+      "\"Z\n\013MemberProto\022\017\n\007version\030\001 \001(\003\022\022\n\nserv" +
+      "er_uri\030\002 \001(\t\022\023\n\013update_time\030\003 \001(\003\022\021\n\tpro" +
+      "xy_uri\030\004 \001(\t\"(\n\006Notify\022\013\n\003key\030\001 \001(\t\022\021\n\tn" +
+      "amespace\030\002 \001(\t\"?\n\rNotifyRequest\022.\n\010notif" +
+      "ies\030\001 \003(\0132\034.notification_service.Notify\"" +
+      "]\n\016NotifyResponse\0227\n\013return_code\030\001 \001(\0162\"" +
+      ".notification_service.ReturnStatus\022\022\n\nre" +
+      "turn_msg\030\002 \001(\t\"-\n\022ListMembersRequest\022\027\n\017" +
+      "timeout_seconds\030\001 \001(\005\"\226\001\n\023ListMembersRes" +
+      "ponse\0227\n\013return_code\030\001 \001(\0162\".notificatio" +
+      "n_service.ReturnStatus\022\022\n\nreturn_msg\030\002 \001" +
+      "(\t\0222\n\007members\030\003 \003(\0132!.notification_servi" +
+      "ce.MemberProto\"K\n\026NotifyNewMemberRequest" +
+      "\0221\n\006member\030\001 \001(\0132!.notification_service." +
+      "MemberProto\"f\n\027NotifyNewMemberResponse\0227" +
       "\n\013return_code\030\001 \001(\0162\".notification_servi" +
-      "ce.ReturnStatus\022\022\n\nreturn_msg\030\002 \001(\t\"-\n\022L" +
-      "istMembersRequest\022\027\n\017timeout_seconds\030\001 \001" +
-      "(\005\"\226\001\n\023ListMembersResponse\0227\n\013return_cod" +
-      "e\030\001 \001(\0162\".notification_service.ReturnSta" +
-      "tus\022\022\n\nreturn_msg\030\002 \001(\t\0222\n\007members\030\003 \003(\013" +
-      "2!.notification_service.MemberProto\"K\n\026N" +
-      "otifyNewMemberRequest\0221\n\006member\030\001 \001(\0132!." +
-      "notification_service.MemberProto\"f\n\027Noti" +
-      "fyNewMemberResponse\0227\n\013return_code\030\001 \001(\016" +
-      "2\".notification_service.ReturnStatus\022\022\n\n" +
-      "return_msg\030\002 \001(\t*&\n\014ReturnStatus\022\013\n\007SUCC" +
-      "ESS\020\000\022\t\n\005ERROR\020\0012\360\005\n\023NotificationService" +
-      "\022_\n\tsendEvent\022&.notification_service.Sen" +
-      "dEventRequest\032(.notification_service.Sen" +
-      "dEventsResponse\"\000\022a\n\nlistEvents\022\'.notifi" +
-      "cation_service.ListEventsRequest\032(.notif" +
-      "ication_service.ListEventsResponse\"\000\022g\n\r" +
-      "listAllEvents\022*.notification_service.Lis" +
-      "tAllEventsRequest\032(.notification_service" +
-      ".ListEventsResponse\"\000\022U\n\006notify\022#.notifi" +
-      "cation_service.NotifyRequest\032$.notificat" +
-      "ion_service.NotifyResponse\"\000\022d\n\013listMemb" +
-      "ers\022(.notification_service.ListMembersRe" +
-      "quest\032).notification_service.ListMembers" +
-      "Response\"\000\022p\n\017notifyNewMember\022,.notifica" +
-      "tion_service.NotifyNewMemberRequest\032-.no" +
-      "tification_service.NotifyNewMemberRespon" +
-      "se\"\000\022}\n\025getLatestVersionByKey\0222.notifica" +
-      "tion_service.GetLatestVersionByKeyReques" +
-      "t\032..notification_service.GetLatestVersio" +
-      "nResponse\"\000B%\n\035com.aiflow.notification.p" +
-      "roto\210\001\001\220\001\001b\006proto3"
+      "ce.ReturnStatus\022\022\n\nreturn_msg\030\002 \001(\t*&\n\014R" +
+      "eturnStatus\022\013\n\007SUCCESS\020\000\022\t\n\005ERROR\020\0012\360\005\n\023" +
+      "NotificationService\022_\n\tsendEvent\022&.notif" +
+      "ication_service.SendEventRequest\032(.notif" +
+      "ication_service.SendEventsResponse\"\000\022a\n\n" +
+      "listEvents\022\'.notification_service.ListEv" +
+      "entsRequest\032(.notification_service.ListE" +
+      "ventsResponse\"\000\022g\n\rlistAllEvents\022*.notif" +
+      "ication_service.ListAllEventsRequest\032(.n" +
+      "otification_service.ListEventsResponse\"\000" +
+      "\022U\n\006notify\022#.notification_service.Notify" +
+      "Request\032$.notification_service.NotifyRes" +
+      "ponse\"\000\022d\n\013listMembers\022(.notification_se" +
+      "rvice.ListMembersRequest\032).notification_" +
+      "service.ListMembersResponse\"\000\022p\n\017notifyN" +
+      "ewMember\022,.notification_service.NotifyNe" +
+      "wMemberRequest\032-.notification_service.No" +
+      "tifyNewMemberResponse\"\000\022}\n\025getLatestVers" +
+      "ionByKey\0222.notification_service.GetLates" +
+      "tVersionByKeyRequest\032..notification_serv" +
+      "ice.GetLatestVersionResponse\"\000B%\n\035com.ai" +
+      "flow.notification.proto\210\001\001\220\001\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -14274,7 +14424,7 @@ public final class NotificationServiceOuterClass {
     internal_static_notification_service_MemberProto_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_notification_service_MemberProto_descriptor,
-        new java.lang.String[] { "Version", "ServerUri", "UpdateTime", });
+        new java.lang.String[] { "Version", "ServerUri", "UpdateTime", "ProxyUri", });
     internal_static_notification_service_Notify_descriptor =
       getDescriptor().getMessageTypes().get(9);
     internal_static_notification_service_Notify_fieldAccessorTable = new

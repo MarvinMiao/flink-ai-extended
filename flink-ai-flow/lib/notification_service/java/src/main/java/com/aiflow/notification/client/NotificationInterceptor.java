@@ -21,6 +21,7 @@ package com.aiflow.notification.client;
 import com.aiflow.notification.proto.NotificationServiceGrpc.NotificationServiceBlockingStub;
 import com.aiflow.notification.proto.NotificationServiceOuterClass.MemberProto;
 import io.grpc.*;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,16 +70,18 @@ public class NotificationInterceptor implements ClientInterceptor {
                 boolean foundNewMember = false;
                 for (MemberProto livingMember : livingMembers) {
                     if (foundNewMember) break;
-                    if (failedMembers.contains(livingMember.getServerUri())) continue;
+                    String memberProxyUri = livingMember.getProxyUri();
+                    String memberUri = StringUtils.isEmpty(memberProxyUri) ? livingMember.getServerUri() : memberProxyUri;
+                    if (failedMembers.contains(memberUri)) continue;
                     stub =
                             wrapBlockingStub(
                                     stub,
-                                    livingMember.getServerUri(),
+                                    memberUri,
                                     livingMembers,
                                     haRunning,
                                     retryIntervalMs,
                                     retryTimeoutMs);
-                    target = livingMember.getServerUri();
+                    target = memberUri;
                     foundNewMember = true;
                 }
                 if (!foundNewMember) {

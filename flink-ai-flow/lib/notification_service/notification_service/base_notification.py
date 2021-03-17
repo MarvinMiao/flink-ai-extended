@@ -188,7 +188,8 @@ class BaseNotification(metaclass=abc.ABCMeta):
 
 class Member(object):
 
-    def __init__(self, version, server_uri, update_time):
+    def __init__(self, version, server_uri, update_time, proxy_uri=None):
         self.version = version
         self.server_uri = server_uri
         self.update_time = update_time
+        self.proxy_uri = proxy_uri

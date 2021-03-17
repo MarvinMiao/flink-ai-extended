@@ -87,8 +87,8 @@ class DbHighAvailabilityStorage(HighAvailabilityStorage):
     def list_dead_members(self, ttl_ms):
         return MemberModel.get_dead_members(ttl_ms)
 
-    def update_member(self, server_uri, server_uuid):
-        MemberModel.update_member(server_uri, server_uuid)
+    def update_member(self, server_uri, server_uuid, proxy_uri=None):
+        MemberModel.update_member(server_uri, server_uuid, proxy_uri=proxy_uri)
 
     def delete_member(self, server_uri=None, server_uuid=None):
         MemberModel.delete_member(server_uri, server_uuid)
@@ -101,6 +101,7 @@ class SimpleNotificationServerHaManager(NotificationServerHaManager):
 
     def __init__(self):
         self.server_uri = None
+        self.proxy_uri = None
         self.storage = None  # type: HighAvailabilityStorage
         self.ttl_ms = None
         self.cached_notify = deque()
@@ -114,8 +115,9 @@ class SimpleNotificationServerHaManager(NotificationServerHaManager):
         self.member_updated_condition = None
         self.uuid = str(uuid.uuid4())
 
-    def start(self, server_uri, storage, ttl_ms, min_notify_interval_ms, member_updated_condition):
+    def start(self, server_uri, storage, ttl_ms, min_notify_interval_ms, member_updated_condition, proxy_uri=None):
         self.server_uri = server_uri
+        self.proxy_uri = proxy_uri
         self.storage = storage
         self.ttl_ms = ttl_ms
         self.min_notify_interval_ms = min_notify_interval_ms
@@ -131,7 +133,7 @@ class SimpleNotificationServerHaManager(NotificationServerHaManager):
             try:
                 # do heartbeat
                 self.storage.clear_dead_members(self.ttl_ms)
-                self.storage.update_member(self.server_uri, self.uuid)
+                self.storage.update_member(self.server_uri, self.uuid, proxy_uri=self.proxy_uri)
                 self.living_members = self.storage.list_living_members(self.ttl_ms)
                 if not self.notified_others_after_start:
                     for member in self.living_members:
@@ -143,7 +145,7 @@ class SimpleNotificationServerHaManager(NotificationServerHaManager):
                         try:
                             self.member_connections[member.server_uri].notifyNewMember(
                                 NotifyNewMemberRequest(member=member_to_proto(
-                                    Member(1, self.server_uri, int(time.time_ns() / 1000000))
+                                    Member(1, self.server_uri, int(time.time_ns() / 1000000), self.proxy_uri)
                                 )))
                         except grpc.RpcError:
                             logging.error("Notify new member to '%s' failed." % member.server_uri,

@@ -68,6 +68,18 @@ public class NotificationClient {
                 currentUri = serverUri;
                 try {
                     initNotificationServiceStub();
+                    ListMembersRequest request =
+                            ListMembersRequest.newBuilder()
+                                    .setTimeoutSeconds(listMemberIntervalMs / 1000)
+                                    .build();
+                    ListMembersResponse response = notificationServiceStub.listMembers(request);
+                    if (response.getReturnCode() == ReturnStatus.SUCCESS) {
+                        livingMembers = new HashSet<>(response.getMembersList());
+                    } else {
+                        throw new Exception(
+                                String.format(
+                                        "Failed to init connection with server %s", serverUri));
+                    }
                     lastError = false;
                     break;
                 } catch (Exception e) {
@@ -176,7 +188,11 @@ public class NotificationClient {
         boolean lastError = false;
         for (MemberProto livingMember : livingMembers) {
             try {
-                currentUri = livingMember.getServerUri();
+                String memberProxyUri = livingMember.getProxyUri();
+                currentUri =
+                        StringUtils.isEmpty(memberProxyUri)
+                                ? livingMember.getServerUri()
+                                : memberProxyUri;
                 initNotificationServiceStub();
                 ListMembersRequest request =
                         ListMembersRequest.newBuilder()
