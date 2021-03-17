@@ -456,6 +456,7 @@ class NotificationClient(BaseNotification):
                 with self.ha_change_lock:
                     self.living_members = [get_member_uri(proto_to_member(proto))
                                            for proto in response.members]
+                    print(f"####living members: {self.living_members}")
             else:
                 logging.error("Exception thrown when updating the living members: %s" %
                               response.return_msg)
